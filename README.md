@@ -9,6 +9,8 @@ Under Testing/Development
 ## Bugs
 "Volume +" hardware switch does not work
 
+Charging hardware fan5405 driver causes bootloop so linear charging for now and its damn slow.
+
 ## Building
 Please build using `panelli_defconfig`
 
