@@ -170,6 +170,18 @@
 		firlen					= <0>;
 		is_batch_supported			= <0>;
 		};
+
+		flashlights: flashlights@ {
+			compatible = "mediatek,camera_flashlights";
+		};
+		
+		sim1_hot_plug: sim1_hot_plug {
+			compatible = "mediatek,sim1_hot_plug";
+		};
+		
+		sim2_hot_plug: sim2_hot_plug {
+			compatible = "mediatek,sim2_hot_plug";
+		};
 };
 /* sensor gpio standization */
 &pio {
@@ -215,43 +227,21 @@
 
 };
 /* sensor end */
-
 &accdet {
 		accdet-mic-vol = <7>;
-		//qiumeng@wind-mobi.com 20170221 begin
-		headset-mode-setting = <0x500 0x500 1 0x1F0 0x800 0x800 0x20>;
-		//qiumeng@wind-mobi.com 20170221 end
+		headset-mode-setting = <0x500 0x200 1 0x1F0 0x800 0x800 0x20>;
 		accdet-plugout-debounce = <20>;
 		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
-		//qiumeng@wind-mobi.com begin at 20161109
 		accdet-mic-mode = <1>;
-		//qiumeng@wind-mobi.com end at 20161109
 		/*0--MD_MAX--UP_MAX--DW_MAX*/
-		headset-three-key-threshold = <0 80 175 500>;    //sunsiyuan@wind-mobi.com modify at 20170213
+		headset-three-key-threshold = <0 80 220 500>;
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 450>;
-		/* accdet eint for A158 ----qiumeng@wind-mobi.com begin at 20161122*/
 		pinctrl-names = "default", "state_eint_as_int";
-		pinctrl-0 = <&ACCDET_pins_default>;
-		pinctrl-1 = <&ACCDET_pins_eint_int>;
+		pinctrl-0 = <&accdet_pins_default>;
+		pinctrl-1 = <&accdet_pins_eint_int>;
 		status = "okay";
-		/* accdet eint for A158 ----qiumeng@wind-mobi.com end at 20161122*/
 };
-/* accdet eint for A158 ----qiumeng@wind-mobi.com begin at 20161122*/
-/* ACCDET GPIO standardization ACC mode use*/
-&pio {
-	ACCDET_pins_default: eint0default {
-	};
-	ACCDET_pins_eint_int: eint@0 {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO6__FUNC_GPIO6>;
-			slew-rate = <0>;
-			bias-disable;
-		};
-	};
-};
-/*ACCDET END*/
-/* accdet eint for A158 ----qiumeng@wind-mobi.com end at 20161122*/
 &touch {
 	tpd-resolution = <720 1280>;
 	/*tp virtual button for panelli*/
@@ -409,73 +399,7 @@
 
 };
 /* CAMERA GPIO end */
-/* FLASHLIGHT GPIO begin */
-//luminjie@wind-mobi.com 20170207 begin
-&pio {
-    flashlights_pins_default: default {
-    };
 
-    flashlights_pins_back_high: back_high@1 {
-        pins_cmd_dat {
-            pins = <PINMUX_GPIO1__FUNC_GPIO1>;
-            slew-rate = <1>;
-            output-high;
-        };
-    };
-
-    flashlights_pins_back_low: back_low@0 {
-        pins_cmd_dat {
-            pins = <PINMUX_GPIO1__FUNC_GPIO1>;
-            slew-rate = <1>;
-            output-low;
-        };
-    };
-    flashlights_pins_backpwm_high: backpwm_high@1 {
-        pins_cmd_dat {
-            pins = <PINMUX_GPIO43__FUNC_GPIO43>;
-            slew-rate = <1>;
-            output-high;
-        };
-    };
-
-    flashlights_pins_backpwm_low: backpwm_low@0 {
-        pins_cmd_dat {
-            pins = <PINMUX_GPIO43__FUNC_GPIO43>;
-            slew-rate = <1>;
-            output-low;
-        };
-    };
-    flashlights_pins_sub_high: sub_high@1 {
-        pins_cmd_dat {
-            pins = <PINMUX_GPIO4__FUNC_GPIO4>;
-            slew-rate = <1>;
-            output-high;
-        };
-    };
-
-    flashlights_pins_sub_low: sub_low@0 {
-        pins_cmd_dat {
-            pins = <PINMUX_GPIO4__FUNC_GPIO4>;
-            slew-rate = <1>;
-            output-low;
-        };
-    };
-};
-
-&flashlights {
-    pinctrl-names = "default", "back_high", "back_low", "backpwm_high", "backpwm_low", "sub_high", "sub_low";
-    pinctrl-0 = <&flashlights_pins_default>;
-    pinctrl-1 = <&flashlights_pins_back_high>;
-    pinctrl-2 = <&flashlights_pins_back_low>;
-    pinctrl-3 = <&flashlights_pins_backpwm_high>;
-    pinctrl-4 = <&flashlights_pins_backpwm_low>;
-    pinctrl-5 = <&flashlights_pins_sub_high>;
-    pinctrl-6 = <&flashlights_pins_sub_low>;
-    status = "okay";
-};
-//luminjie@wind-mobi.com 20170207 end
-
-/* FLASHLIGHT GPIO end */
 /* CONSYS GPIO standardization */
 &pio {
 	consys_pins_default: default {
@@ -814,3 +738,4 @@
 	status = "okay";
 };
 /* USB GPIO Kernal Standardization end */
+#include <panelli_cust.dtsi>

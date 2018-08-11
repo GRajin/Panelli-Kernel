@@ -53,11 +53,6 @@
 #define fan5405_SLAVE_ADDR_READ    0xD5
 #define fan5405_SLAVE_ADDR_WRITE   0xD4
 
-#ifdef FAN5405_BUSNUM
-#undef FAN5405_BUSNUM
-#endif
-#define FAN5405_BUSNUM	3
-
 static struct i2c_client *new_client;
 static const struct i2c_device_id fan5405_i2c_id[] = { {"fan5405", 0}, {} };
 
@@ -66,7 +61,7 @@ static int fan5405_driver_probe(struct i2c_client *client, const struct i2c_devi
 
 #ifdef CONFIG_OF
 static const struct of_device_id fan5405_of_match[] = {
-	{.compatible = "mediatek,SWITHING_CHARGER",},
+	{.compatible = "mediatek,swithing_charger",},
 	{},
 };
 
@@ -75,7 +70,7 @@ MODULE_DEVICE_TABLE(of, fan5405_of_match);
 
 static struct i2c_driver fan5405_driver = {
 	.driver = {
-		   .name = "SWITHING_CHARGER",
+		   .name = "fan5405",
 #ifdef CONFIG_OF
 		   .of_match_table = fan5405_of_match,
 #endif

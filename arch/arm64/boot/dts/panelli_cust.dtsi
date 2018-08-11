@@ -1,0 +1,117 @@
+&i2c1 {
+	swithing_charger@6a {
+		compatible = "mediatek,swithing_charger";
+		reg = <0x6a>;
+	};
+};
+
+&keypad {
+	mediatek,kpd-key-debounce = <1024>;
+	mediatek,kpd-sw-pwrkey = <116>;
+	mediatek,kpd-hw-pwrkey = <8>;
+	mediatek,kpd-use-extend-type = <0>;
+	/*HW Keycode [0~71] -> Linux Keycode*/
+	mediatek,kpd-hw-map-num = <72>;
+	mediatek,kpd-hw-init-map = <114 115 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+				0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+				0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 >;
+	mediatek,kpd-pwrkey-eint-gpio = <0>;
+	mediatek,kpd-pwkey-gpio-din  = <0>;
+	mediatek,kpd-hw-dl-key0 = <1>;
+	mediatek,kpd-hw-dl-key1 = <0>;
+	mediatek,kpd-hw-dl-key2 = <8>;
+	mediatek,kpd-hw-recovery-key = <1>;
+	mediatek,kpd-hw-factory-key = <0>;
+	status = "okay";
+};
+
+&pio {
+	accdet_pins_default: eint0default {
+	};
+	accdet_pins_eint_int: eint@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO6__FUNC_GPIO6>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+
+&audgpio {
+    extspkamp-gpio = <120 0>;
+};
+
+&sim1_hot_plug {
+	status = "okay";
+};
+
+&sim2_hot_plug {
+	status = "okay";
+};
+
+/* FLASHLIGHT GPIO begin */
+
+&pio {
+    flashlights_pins_default: default {
+    };
+
+    flashlights_pins_back_high: back_high@1 {
+        pins_cmd_dat {
+            pins = <PINMUX_GPIO1__FUNC_GPIO1>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+
+    flashlights_pins_back_low: back_low@0 {
+        pins_cmd_dat {
+            pins = <PINMUX_GPIO1__FUNC_GPIO1>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+    flashlights_pins_backpwm_high: backpwm_high@1 {
+        pins_cmd_dat {
+            pins = <PINMUX_GPIO43__FUNC_GPIO43>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+
+    flashlights_pins_backpwm_low: backpwm_low@0 {
+        pins_cmd_dat {
+            pins = <PINMUX_GPIO43__FUNC_GPIO43>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+    flashlights_pins_sub_high: sub_high@1 {
+        pins_cmd_dat {
+            pins = <PINMUX_GPIO4__FUNC_GPIO4>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+
+    flashlights_pins_sub_low: sub_low@0 {
+        pins_cmd_dat {
+            pins = <PINMUX_GPIO4__FUNC_GPIO4>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
+};
+
+&flashlights {
+    pinctrl-names = "default", "back_high", "back_low", "backpwm_high", "backpwm_low", "sub_high", "sub_low";
+    pinctrl-0 = <&flashlights_pins_default>;
+    pinctrl-1 = <&flashlights_pins_back_high>;
+    pinctrl-2 = <&flashlights_pins_back_low>;
+    pinctrl-3 = <&flashlights_pins_backpwm_high>;
+    pinctrl-4 = <&flashlights_pins_backpwm_low>;
+    pinctrl-5 = <&flashlights_pins_sub_high>;
+    pinctrl-6 = <&flashlights_pins_sub_low>;
+    status = "okay";
+};
+/* FLASHLIGHT GPIO end */
+

@@ -149,9 +149,9 @@ static u32 charging_hw_init(void *data)
  * 2) Hex values cause boot loop. ¯\_(ツ)_/¯
 */
 	#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-	fan5405_reg_config_interface(0x06, 0x77); /* ISAFE = 1150mA, VSAFE = 4.44V */
+	fan5405_reg_config_interface(0x07, 0x77); /* ISAFE = 1250mA, VSAFE = 4.44V */
 	#else
-	fan5405_reg_config_interface(0x06, 0x70); /* ISAFE = 550mA, VSAFE = 3.54V */
+	fan5405_reg_config_interface(0x06, 0x70);
 	#endif
 
 	fan5405_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
