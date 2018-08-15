@@ -53,11 +53,6 @@
 #define fan5405_SLAVE_ADDR_READ    0xD5
 #define fan5405_SLAVE_ADDR_WRITE   0xD4
 
-#ifdef FAN5405_BUSNUM
-#undef FAN5405_BUSNUM
-#endif
-#define FAN5405_BUSNUM	3
-
 static struct i2c_client *new_client;
 static const struct i2c_device_id fan5405_i2c_id[] = { {"fan5405", 0}, {} };
 

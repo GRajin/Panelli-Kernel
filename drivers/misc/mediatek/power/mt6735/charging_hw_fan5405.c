@@ -361,7 +361,7 @@ static u32 charging_get_battery_status(void *data)
 {
 	unsigned int status = STATUS_OK;
 
-#if 1 /*defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)*/
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 	*(kal_bool *) (data) = 0;	/* battery exist */
 	battery_log(BAT_LOG_CRTI, "[charging_get_battery_status] battery exist for bring up.\n");
 #else
