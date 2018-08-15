@@ -1,22 +1,35 @@
-//zhanyoufei@wind-mobi.com 20161110 begin
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 /*****************************************************************************
-*
-* Filename:
-* ---------
-*   fan5405.h
-*
-* Project:
-* --------
-*   Android
-*
-* Description:
-* ------------
-*   fan5405 header file
-*
-* Author:
-* -------
-*
-****************************************************************************/
+ *
+ * Filename:
+ * ---------
+ *    fan5405.h
+ *
+ * Project:
+ * --------
+ *   Android Software
+ *
+ * Author:
+ * -------
+ *   LinuxPanda
+ *
+ * Reference:
+ * ---------
+ *   http://www.onsemi.com/PowerSolutions/product.do?id=FAN5405
+ *   http://www.onsemi.com/pub/Collateral/FAN5405-D.pdf
+ * ****************************************************************************/
 
 #ifndef _fan5405_SW_H_
 #define _fan5405_SW_H_
@@ -175,4 +188,3 @@ extern unsigned int fan5405_read_interface(unsigned char RegNum, unsigned char *
 extern unsigned int fan5405_config_interface(unsigned char RegNum, unsigned char val,
 	unsigned char MASK, unsigned char SHIFT);
 #endif				/* _fan5405_SW_H_ */
-//zhanyoufei@wind-mobi.com 20161110 end

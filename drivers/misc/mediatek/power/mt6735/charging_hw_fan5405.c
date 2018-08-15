@@ -1,4 +1,36 @@
-//zhanyoufei@wind-mobi.com 20161110 begin
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
+/*****************************************************************************
+ *
+ * Filename:
+ * ---------
+ *    charging_hw_fan5405.c
+ *
+ * Project:
+ * --------
+ *   Android Software
+ *
+ * Author:
+ * -------
+ *   LinuxPanda
+ *
+ * Reference:
+ * ---------
+ *   http://www.onsemi.com/PowerSolutions/product.do?id=FAN5405
+ *   http://www.onsemi.com/pub/Collateral/FAN5405-D.pdf
+ * ****************************************************************************/
+
 #include <linux/types.h>
 #include <mt-plat/charging.h>
 #include <mt-plat/upmu_common.h>
@@ -9,6 +41,7 @@
 #include <mach/mt_charging.h>
 #include <mach/mt_pmic.h>
 #include "fan5405.h"
+
 
 /* ============================================================ // */
 /* Define */
@@ -78,7 +111,7 @@ const u32 VCDT_HV_VTH[] = {
 	    BATTERY_VOLT_10_500000_V
 };
 
-u32 charging_value_to_parameter(const u32 *parameter, const u32 array_size, const u32 val)
+static u32 charging_value_to_parameter(const u32 *parameter, const u32 array_size, const u32 val)
 {
 	if (val < array_size)
 		return parameter[val];
@@ -86,7 +119,7 @@ u32 charging_value_to_parameter(const u32 *parameter, const u32 array_size, cons
 	return parameter[0];
 }
 
-u32 charging_parameter_to_value(const u32 *parameter, const u32 array_size, const u32 val)
+static u32 charging_parameter_to_value(const u32 *parameter, const u32 array_size, const u32 val)
 {
 	u32 i;
 
@@ -138,31 +171,17 @@ static u32 charging_hw_init(void *data)
 	mt_set_gpio_mode(wireless_charger_gpio_number, 0);	/* 0:GPIO mode */
 	mt_set_gpio_dir(wireless_charger_gpio_number, 0);	/* 0: input, 1: output */
 #endif
+	battery_log(BAT_LOG_CRTI, "fan5405  charging_hw_init  line=%d\n", __LINE__);
 
-/*
- * LinuxPanda
- * Default values were incorrect. So changed values according to actual specs.
- * http://www.onsemi.com/PowerSolutions/product.do?id=FAN5405
- *
- * Note:
- * 1) Don't understand why Decimal values are used in place of Hex??
- * 2) Hex values cause boot loop. ¯\_(ツ)_/¯
-*/
-	#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-	fan5405_reg_config_interface(0x07, 0x77); /* ISAFE = 1250mA, VSAFE = 4.44V */
-	#else
+#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
+	fan5405_reg_config_interface(0x06, 0x77);
+#else
 	fan5405_reg_config_interface(0x06, 0x70);
-	#endif
+#endif
 
-	fan5405_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
-	fan5405_reg_config_interface(0x01, 0xb8);	/* TE=1, CE=0, HZ_MODE=0, OPA_MODE=0 */
-/*
- * Note:
- * 1) Revert back the reg interface to 0x04.
- * 2) But the above ISAFE config works only with 0x03. ¯\_(ツ)_/¯
- * 3) *godzilla-facepalm*
-*/
-	fan5405_reg_config_interface(0x05, 0x04);
+	fan5405_reg_config_interface(0x00, 0xC0); /*kick chip watch dog*/
+	fan5405_reg_config_interface(0x01, 0xB8); /*TE=1, CE=0, HZ_MODE=0, OPA_MODE=0*/
+	fan5405_reg_config_interface(0x05, 0x03);
 	if (!charging_init_flag) {
 		fan5405_reg_config_interface(0x04, 0x1A);	/* 146mA */
 		charging_init_flag = KAL_TRUE;
@@ -246,7 +265,11 @@ static u32 charging_set_current(void *data)
 		fan5405_set_io_level(0);
 		array_size = GETARRAYNUM(CS_VTH);
 		set_chr_current = bmt_find_closest_level(CS_VTH, array_size, current_value);
+
+	battery_log(BAT_LOG_CRTI, "charging_set_current  set_chr_current=%d\n", set_chr_current);
+
 		register_value = charging_parameter_to_value(CS_VTH, array_size, set_chr_current);
+	battery_log(BAT_LOG_CRTI, "charging_set_current  register_value=%d\n", register_value);
 		fan5405_set_iocharge(register_value);
 	}
 	return status;
@@ -262,11 +285,14 @@ static u32 charging_set_input_current(void *data)
 
 	if (*(u32 *) data > CHARGE_CURRENT_500_00_MA) {
 		register_value = 0x3;
+	battery_log(BAT_LOG_CRTI, "charging_set_input_current  register_value=%d\n", register_value);
 	} else {
 		array_size = GETARRAYNUM(INPUT_CS_VTH);
 		set_chr_current = bmt_find_closest_level(INPUT_CS_VTH, array_size, *(u32 *) data);
+	battery_log(BAT_LOG_CRTI, "charging_set_input_current  set_chr_current=%d\n", set_chr_current);
 		register_value =
 		    charging_parameter_to_value(INPUT_CS_VTH, array_size, set_chr_current);
+	battery_log(BAT_LOG_CRTI, "charging_set_input_current  register_value=%d\n", register_value);
 	}
 
 	fan5405_set_input_charging_current(register_value);
@@ -334,10 +360,8 @@ static u32 charging_get_hv_status(void *data)
 static u32 charging_get_battery_status(void *data)
 {
 	unsigned int status = STATUS_OK;
-//zhanyoufei@wind-mobi.com 20161216 begin
-//#if 1 //defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
-//zhanyoufei@wind-mobi.com 20161216 end
+
+#if 1 /*defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)*/
 	*(kal_bool *) (data) = 0;	/* battery exist */
 	battery_log(BAT_LOG_CRTI, "[charging_get_battery_status] battery exist for bring up.\n");
 #else
@@ -383,11 +407,6 @@ static u32 charging_get_charger_type(void *data)
 	*(CHARGER_TYPE *) (data) = STANDARD_HOST;
 #else
 	*(CHARGER_TYPE *) (data) = hw_charging_get_charger_type();
-	//zhanyoufei@wind-mobi.com 20170104 begin
-	if(*(CHARGER_TYPE *) (data) == 1){
-	*(CHARGER_TYPE *) (data) = hw_charging_get_charger_type();
-	}
-	//zhanyoufei@wind-mobi.com 20170104 end
 #endif
 
 	return status;
@@ -471,34 +490,39 @@ static u32 charging_set_error_state(void *data)
 	return STATUS_UNSUPPORTED;
 }
 
-static u32(*const charging_func[CHARGING_CMD_NUMBER]) (void *data) = {
-charging_hw_init, charging_dump_register, charging_enable, charging_set_cv_voltage,
-	    charging_get_current, charging_set_current, charging_set_input_current,
-	    charging_get_charging_status, charging_reset_watch_dog_timer,
-	    charging_set_hv_threshold, charging_get_hv_status, charging_get_battery_status,
-	    charging_get_charger_det_status, charging_get_charger_type,
-	    charging_get_is_pcm_timer_trigger, charging_set_platform_reset,
-	    charging_get_platform_boot_mode, charging_set_power_off,
-	    charging_get_power_source, charging_get_csdac_full_flag,
-	    charging_set_ta_current_pattern, charging_set_error_state};
+ static u32(*const charging_func[CHARGING_CMD_NUMBER])(void *data) = {
+ 	 charging_hw_init
+	,charging_dump_register
+	,charging_enable
+	,charging_set_cv_voltage
+	,charging_get_current
+	,charging_set_current
+	,charging_set_input_current
+	,charging_get_charging_status
+	,charging_reset_watch_dog_timer
+	,charging_set_hv_threshold
+	,charging_get_hv_status
+	,charging_get_battery_status
+	,charging_get_charger_det_status
+	,charging_get_charger_type
+	,charging_get_is_pcm_timer_trigger
+	,charging_set_platform_reset
+	,charging_get_platform_boot_mode
+	,charging_set_power_off
+	,charging_get_power_source
+	,charging_get_csdac_full_flag
+	,charging_set_ta_current_pattern
+	,charging_set_error_state
+ };
 
 s32 chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
 {
 	s32 status;
 
-	if (cmd < CHARGING_CMD_NUMBER)
-	{
-		if(charging_func[cmd] != NULL)
+	if ((cmd < CHARGING_CMD_NUMBER) && (charging_func[cmd] != NULL))
 		status = charging_func[cmd] (data);
-		else
-		{
-			battery_log(BAT_LOG_CRTI, "[chr_control_interface]cmd:%d not supported\n", cmd);
-			status = STATUS_UNSUPPORTED;
-		}
-	}
 	else
 		return STATUS_UNSUPPORTED;
 
 	return status;
 }
-//zhanyoufei@wind-mobi.com 20161110 end

@@ -2,6 +2,7 @@
 	swithing_charger@6a {
 		compatible = "mediatek,swithing_charger";
 		reg = <0x6a>;
+		status = "okay";
 	};
 };
 
