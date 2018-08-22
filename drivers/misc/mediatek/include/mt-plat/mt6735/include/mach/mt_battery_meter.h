@@ -82,7 +82,7 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE 1000
 #define R_FG_BOARD_SLOPE 1000 /*slope*/
-#define CAR_TUNE_VALUE 100 /*1.00*/
+#define CAR_TUNE_VALUE 86 /*1.00*/
 
 
 /* HW Fuel gague  */
@@ -218,9 +218,8 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE 1000
 #define R_FG_BOARD_SLOPE 1000 /*slope*/
-//zhanyoufei@wind-mobi.com 20161207 begin
-#define CAR_TUNE_VALUE 100 /*1.00*/
-//zhanyoufei@wind-mobi.com 20161207 end
+#define CAR_TUNE_VALUE 101 /*1.00*/
+
 
 /* HW Fuel gague  */
 #define CURRENT_DETECT_R_FG 10  /*1mA*/
@@ -358,6 +357,7 @@
 #define R_FG_BOARD_BASE 1000
 #define R_FG_BOARD_SLOPE 1000 /*slope*/
 #define CAR_TUNE_VALUE 100 /*1.00*/
+
 
 /* HW Fuel gague  */
 #define CURRENT_DETECT_R_FG 10  /*1mA*/

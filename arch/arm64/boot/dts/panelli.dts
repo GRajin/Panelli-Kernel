@@ -749,4 +749,10 @@
 	status = "okay";
 };
 /* USB GPIO Kernal Standardization end */
+
 #include <panelli_cust.dtsi>
+#ifdef CONFIG_MTK_HAFG_20
+#include <panelli_fg20_bat_setting.dtsi>
+#else
+#include <panelli_oldgauge_bat_setting.dtsi>
+#endif

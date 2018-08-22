@@ -238,19 +238,21 @@
 
 &accdet {
 		accdet-mic-vol = <7>;
-		headset-mode-setting = <0x500 0x200 1 0x1F0 0x800 0x800 0x20>;
+		headset-mode-setting = <0x500 0x500 1 0x1F0 0x800 0x800 0x20>;
 		accdet-plugout-debounce = <20>;
 		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
 		accdet-mic-mode = <1>;
 		/*0--MD_MAX--UP_MAX--DW_MAX*/
-		headset-three-key-threshold = <0 80 220 500>;
+		headset-three-key-threshold = <0 80 175 500>;
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 450>;
+		/* ACCDET GPIO standardization ACC mode use */
 		pinctrl-names = "default", "state_eint_as_int";
-		pinctrl-0 = <&accdet_pins_default>;
-		pinctrl-1 = <&accdet_pins_eint_int>;
+		pinctrl-0 = <&ACCDET_pins_default>;
+		pinctrl-1 = <&ACCDET_pins_eint_int>;
 		status = "okay";
 };
+
 &touch {
 	tpd-resolution = <720 1280>;
 	/*tp virtual button for panelli*/
@@ -747,4 +749,5 @@
 	status = "okay";
 };
 /* USB GPIO Kernal Standardization end */
+
 #include <panelli_cust.dtsi>

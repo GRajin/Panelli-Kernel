@@ -28,13 +28,7 @@ static variable defination
 ----------------------------------------------------------------------*/
 
 #define REGISTER_VALUE(x)   (x - 1)
-//solve headset pull out leads to music playback ---qiumeng@wind-mobi.com 20170222 begin
-#ifdef CONFIG_WIND_HEADSET_LEAD_MUSIC_PLAY
-static int button_press_debounce = 0x800;
-#else
 static int button_press_debounce = 0x400;
-#endif
-//solve headset pull out leads to music playback ---qiumeng@wind-mobi.com 20170222 end
 int cur_key = 0;
 struct head_dts_data accdet_dts_data;
 s8 accdet_auxadc_offset;
@@ -105,9 +99,6 @@ struct pinctrl_state *pins_eint_int;
 #endif
 #ifdef DEBUG_THREAD
 #endif
-//qiumeng@wind-mobi.com 20170111 begin
-u32 headset_flag = 0;
-//qiumeng@wind-mobi.com 20170111 end
 static u32 pmic_pwrap_read(u32 addr);
 static void pmic_pwrap_write(u32 addr, unsigned int wdata);
 char *accdet_status_string[5] = {
@@ -522,9 +513,6 @@ static irqreturn_t accdet_eint_func(int irq, void *data)
 #endif
 
 		/* update the eint status */
-		//qiumeng@wind-mobi.com 20170111 begin
-		headset_flag = 0;
-		//qiumeng@wind-mobi.com 20170111 end
 		cur_eint_state = EINT_PIN_PLUG_OUT;
 	} else {
 		/*
@@ -546,9 +534,6 @@ static irqreturn_t accdet_eint_func(int irq, void *data)
 		gpio_set_debounce(gpiopin, accdet_dts_data.accdet_plugout_debounce * 1000);
 #endif
 		/* update the eint status */
-		//qiumeng@wind-mobi.com 20170111 begin
-		headset_flag = 1;
-		//qiumeng@wind-mobi.com 20170111 end
 		cur_eint_state = EINT_PIN_PLUG_IN;
 
 		mod_timer(&micbias_timer, jiffies + MICBIAS_DISABLE_TIMER);
@@ -642,18 +627,7 @@ static int key_check(int b)
 	else if ((b < accdet_dts_data.three_key.up_key) && (b >= accdet_dts_data.three_key.mid_key))
 		return UP_KEY;
 	else if (b < accdet_dts_data.three_key.mid_key)
-	{
-	  //solve headset pull out leads to music playback ---qiumeng@wind-mobi.com 20170307 begin
-	  #ifndef CONFIG_WIND_HEADSET_LEAD_MUSIC_PLAY
-		  if((16 <= b ) && (b <= 28))
-			  return NO_KEY;
-		  else
-			  return MD_KEY;
-	  #else
-	      return MD_KEY;
-	  #endif
-	  //solve headset pull out leads to music playback ---qiumeng@wind-mobi.com 20170307 end
-	}
+		return MD_KEY;
 	ACCDET_DEBUG("[accdet] leave key_check!!\n");
 	return NO_KEY;
 }
@@ -1457,17 +1431,6 @@ static ssize_t show_accdet_dump_register(struct device_driver *ddri, char *buf)
 
 	return strlen(buf);
 }
-//tuwenzan@wind-mobi.com add at 20161124 begin
-#ifdef CONFIG_WIND_FM_RSSI
-static ssize_t show_fm_rssi_state(struct device_driver *ddri, char *buf)
-{
-	signed int rssi_value = 0;
-	mt6627_GetCurRSSI(&rssi_value);
-	return sprintf(buf,"Rssi = %d\n",rssi_value);
-}
-#endif
-//tuwenzan@wind-mobi.com add at 20161124 end
-
 
 static int dbug_thread(void *unused)
 {
@@ -1578,10 +1541,6 @@ static DRIVER_ATTR(dump_register, S_IWUSR | S_IRUGO, show_accdet_dump_register, 
 static DRIVER_ATTR(set_headset_mode, S_IWUSR | S_IRUGO, NULL, store_accdet_set_headset_mode);
 static DRIVER_ATTR(start_debug, S_IWUSR | S_IRUGO, NULL, store_accdet_start_debug_thread);
 static DRIVER_ATTR(set_register, S_IWUSR | S_IRUGO, NULL, store_accdet_set_register);
-//tuwenzan@wind-mobi.com add at 20161124 begin
-#ifdef CONFIG_WIND_FM_RSSI
-static DRIVER_ATTR(fm_rssi_state, 0644, show_fm_rssi_state, NULL);
-#endif
 
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *accdet_attr_list[] = {
@@ -1590,9 +1549,6 @@ static struct driver_attribute *accdet_attr_list[] = {
 	&driver_attr_dump_register,
 	&driver_attr_set_headset_mode,
 	&driver_attr_accdet_call_state,
-#ifdef CONFIG_WIND_FM_RSSI
-	&driver_attr_fm_rssi_state,
-#endif
 /*#ifdef CONFIG_ACCDET_PIN_RECOGNIZATION*/
 	&driver_attr_accdet_pin_recognition,
 /*#endif*/
@@ -1600,7 +1556,6 @@ static struct driver_attribute *accdet_attr_list[] = {
 	&driver_attr_TS3A225EConnectorType,
 #endif
 };
-//tuwenzan@wind-mobi.com add at 20161124 end
 
 static int accdet_create_attr(struct device_driver *driver)
 {

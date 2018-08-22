@@ -640,12 +640,14 @@ KBUILD_CFLAGS += $(call cc-disable-warning,logical-not-parentheses)
 KBUILD_CFLAGS += $(call cc-disable-warning,misleading-indentation)
 KBUILD_CFLAGS += $(call cc-disable-warning,switch-bool)
 KBUILD_CFLAGS += $(call cc-disable-warning,unused-but-set-variable)
+KBUILD_CFLAGS += $(call cc-disable-warning,unused-variable)
 # Extra flags for GCC 7
+KBUILD_CFLAGS += $(call cc-disable-warning,int-conversion)
 KBUILD_CFLAGS += $(call cc-disable-warning,format-overflow)
 KBUILD_CFLAGS += $(call cc-disable-warning,format-truncation)
 KBUILD_CFLAGS += $(call cc-disable-warning,memset-elt-size)
 KBUILD_CFLAGS += $(call cc-disable-warning,stringop-overflow)
-KBUILD_CFLAGS += $(call cc-disable-warning,unused-but-set-variable)
+KBUILD_CFLAGS += $(call cc-disable-warning,unused-function)
 KBUILD_CFLAGS += $(call cc-disable-warning,uninitialized)
 
 # Tell gcc to never replace conditional load with a non-conditional one

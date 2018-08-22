@@ -934,28 +934,6 @@ void select_charging_curret(void)
 #else
 			{
 				g_temp_CC_value = batt_cust_data.usb_charger_current;
-
-#if defined(CONFIG_ARM64)
-				if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
-				    "k35v1_64_om_lwctg", 17) == 0)
-					g_temp_CC_value = batt_cust_data.ac_charger_current;
-
-				if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
-				    "k35v1_64_op01_lwctg", 19) == 0)
-					g_temp_CC_value = batt_cust_data.ac_charger_current;
-
-				if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
-				    "k35v1_64_om_lwctg_cnop", 22) == 0)
-					g_temp_CC_value = batt_cust_data.ac_charger_current;
-#elif defined(CONFIG_ARM)
-				if (strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES,
-				    "k35v1_gmo_op02_qhd_512m", 23) == 0)
-					g_temp_CC_value = batt_cust_data.ac_charger_current;
-
-				if (strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES,
-				    "k35v1_gmo_cnop_lwctg_512_35m", 28) == 0)
-					g_temp_CC_value = batt_cust_data.ac_charger_current;
-#endif
 			}
 #endif
 		} else if (BMT_status.charger_type == NONSTANDARD_CHARGER) {

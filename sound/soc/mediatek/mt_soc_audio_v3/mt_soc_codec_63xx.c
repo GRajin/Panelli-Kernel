@@ -56,9 +56,7 @@
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/soc.h>
-//ext pa add for A158 ----qiumeng@wind-mobi.com begin at 20161109
 #if !defined(CONFIG_MTK_LEGACY_EXTSPK)
-//ext pa add for A158 ----qiumeng@wind-mobi.com end at 20161109
 #include <linux/gpio.h>
 #include <linux/pinctrl/consumer.h>
 #else
@@ -99,6 +97,7 @@
 #include "mt_soc_pcm_common.h"
 #include "AudDrv_Common_func.h"
 #include "AudDrv_Gpio.h"
+#include "mt_soc_codec_63xx.h"
 
 /* #define AW8736_MODE_CTRL // AW8736 PA output power mode control */
 
@@ -1852,7 +1851,7 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 #ifdef CONFIG_OF
 
 #define GAP (2)			/* unit: us */
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY_EXTSPK)
 #define AW8736_MODE3 /*0.8w*/ \
 do { \
 	mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE); \
@@ -1870,14 +1869,9 @@ do { \
 #define NULL_PIN_DEFINITION    (-1)
 static void Ext_Speaker_Amp_Change(bool enable)
 {
-//ext pa add for A158 ----qiumeng@wind-mobi.com begin at 20161109
-#if defined(CONFIG_MTK_LEGACY_EXTSPK)
-	int ret;
-#endif
-//ext pa add for A158 ----qiumeng@wind-mobi.com end at 20161109
 #define SPK_WARM_UP_TIME        (25)	/* unit is ms */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY_EXTSPK)
 	int ret;
 
 	ret = GetGPIO_Info(5, &pin_extspkamp, &pin_mode_extspkamp);
@@ -1886,39 +1880,10 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		return;
 	}
 #endif
-
 	if (enable) {
 		pr_debug("Ext_Speaker_Amp_Change ON+\n");
-		
 #ifndef CONFIG_MTK_SPEAKER
-//ext pa add for A158 ----qiumeng@wind-mobi.com begin at 20161109
 #if defined(CONFIG_MTK_LEGACY_EXTSPK)
-	ret = GetGPIO_Info(5, &pin_extspkamp, &pin_mode_extspkamp);
-	if (ret < 0) {
-		pr_err("Ext_Speaker_Amp_Change GetGPIO_Info FAIL!!!\n");
-		return;
-	}
-		pr_warn("Ext_Speaker_Amp_Change ON set GPIO\n");
-		mt_set_gpio_mode(pin_extspkamp, GPIO_MODE_00);	/* GPIO117: DPI_D3, mode 0 */
-		mt_set_gpio_pull_enable(pin_extspkamp, GPIO_PULL_ENABLE);
-		mt_set_gpio_dir(pin_extspkamp, GPIO_DIR_OUT);	/* output */
-		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO);	/* low disable */
-		usleep_range(1*1000, 20*1000);
-		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE);
-		//change ext amp to mode3 for A158 ---shenyong@wind-mobi.com add at 20161214 begin		
-		udelay(GAP);
-		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO);	/* low disable */
-		udelay(GAP);
-		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO);	/* low disable */
-		udelay(GAP);
-		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ONE);
-		//change ext amp to mode3 for A158 ---shenyong@wind-mobi.com add at 20161214 end
-#endif
-//ext pa add for A158 ----qiumeng@wind-mobi.com end at 20161109
-
-#if defined(CONFIG_MTK_LEGACY)
 
 		ret = GetGPIO_Info(10, &pin_extspkamp_2, &pin_mode_extspkamp_2);
 		pr_warn("Ext_Speaker_Amp_Change ON set GPIO\n");
@@ -1935,11 +1900,11 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #else
 		AudDrv_GPIO_EXTAMP_Select(false);
 		AudDrv_GPIO_EXTAMP2_Select(false);
-#endif /*CONFIG_MTK_LEGACY*/
+#endif /*CONFIG_MTK_LEGACY_EXTSPK*/
 
 		/*udelay(1000);*/
 		usleep_range(1*1000, 20*1000);
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY_EXTSPK)
 		mt_set_gpio_dir(pin_extspkamp, GPIO_DIR_OUT);	/* output */
 		if (pin_extspkamp_2 != NULL_PIN_DEFINITION)
 			mt_set_gpio_dir(pin_extspkamp_2, GPIO_DIR_OUT);	/* output */
@@ -1954,20 +1919,14 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #else
 		AudDrv_GPIO_EXTAMP_Select(true);
 		AudDrv_GPIO_EXTAMP2_Select(true);
-#endif /*CONFIG_MTK_LEGACY*/
+#endif /*CONFIG_MTK_LEGACY_EXTSPK*/
 		msleep(SPK_WARM_UP_TIME);
 #endif
 		pr_debug("Ext_Speaker_Amp_Change ON-\n");
 	} else {
 		pr_debug("Ext_Speaker_Amp_Change OFF+\n");
 #ifndef CONFIG_MTK_SPEAKER
-//ext pa add for A158 ----qiumeng@wind-mobi.com begin at 20161109
 #if defined(CONFIG_MTK_LEGACY_EXTSPK)
-		mt_set_gpio_dir(pin_extspkamp, GPIO_DIR_OUT);	/* output */
-		mt_set_gpio_out(pin_extspkamp, GPIO_OUT_ZERO);	/* low disbale */
-#endif
-//ext pa add for A158 ----qiumeng@wind-mobi.com end at 20161109
-#if defined(CONFIG_MTK_LEGACY)
 		ret = GetGPIO_Info(10, &pin_extspkamp_2, &pin_mode_extspkamp_2);
 		/* mt_set_gpio_mode(pin_extspkamp, GPIO_MODE_00); //GPIO117: DPI_D3, mode 0 */
 		mt_set_gpio_dir(pin_extspkamp, GPIO_DIR_OUT);	/* output */
@@ -2113,7 +2072,7 @@ static void Receiver_Speaker_Switch_Change(bool enable)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_OF
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_LEGACY_EXTSPK)
 
 	int ret;
 

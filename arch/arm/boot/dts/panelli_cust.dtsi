@@ -1,3 +1,7 @@
+/*************************
+ * Panelli Customized Setting dtsi file
+*************************/
+
 &i2c1 {
 	swithing_charger@6a {
 		compatible = "mediatek,swithing_charger";
@@ -26,20 +30,21 @@
 	status = "okay";
 };
 
+&audgpio {
+    extspkamp-gpio = <120 0>;
+};
+
+/* ACCDET GPIO Standardization ACC mode use */
 &pio {
-	accdet_pins_default: eint0default {
+	ACCDET_pins_default:eint6default {
 	};
-	accdet_pins_eint_int: eint@0 {
+	ACCDET_pins_eint_int:eint@6 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO6__FUNC_GPIO6>;
 			slew-rate = <0>;
 			bias-disable;
 		};
 	};
-};
-
-&audgpio {
-    extspkamp-gpio = <120 0>;
 };
 
 &sim1_hot_plug {
@@ -50,7 +55,41 @@
 	status = "okay";
 };
 
-/* FLASHLIGHT GPIO begin */
+&pio {
+	cam_cal_drv{
+		compatible = "mediatek,cam_cal_drv";
+		main_bus = <0>;
+		sub_bus = <0>;
+	};
+};
+
+/* Battery */
+
+&bat_comm {
+	/* Charging Current Setting */
+	usb_charger_current = <90000 >;	/* Unit: 0.01 mA */
+	ac_charger_input_current = <200000 >; /* Unit: 0.01 mA */
+	ac_charger_current = <125000 >;	/* Unit: 0.01 mA */
+	non_std_ac_charger_current = <125000 >;	/* Unit: 0.01 mA */
+	charging_host_charger_current = <65000 >;	/* Unit: 0.01 mA */
+
+	/* charger error check */
+	bat_low_temp_protect_enable = <1 >;
+	v_charger_enable = <1 >;	/* 1:on , 0:off */
+	v_charger_max = <6500 >;	/* unit: mV */
+	v_charger_min = <4400 >;
+
+	/*  Tracking TIME */
+	onehundred_percent_tracking_time = <10 >;	/* Unit: second */
+	npercent_tracking_time = <20 >;	/* Unit: second */
+	sync_to_real_tracking_time = <60 >;	/* Unit: second */
+	v_0percent_tracking = <3450 >;	/* Unit: mV */
+
+	/* High battery support */
+	high_battery_voltage_support = <1 >;
+};
+
+/* FLASHLIGHT GPIO */
 
 &pio {
     flashlights_pins_default: default {
@@ -114,5 +153,4 @@
     pinctrl-6 = <&flashlights_pins_sub_low>;
     status = "okay";
 };
-/* FLASHLIGHT GPIO end */
 

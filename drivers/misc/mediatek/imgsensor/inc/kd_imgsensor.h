@@ -122,6 +122,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define IMX258_MONO_SENSOR_ID                   0x0259
 #define IMX230_SENSOR_ID                        0x0230
 #define IMX220_SENSOR_ID                        0x0220
+#define IMX219_SENSOR_ID                        0x0219
 #define IMX214_SENSOR_ID                        0x0214
 #define IMX214_MONO_SENSOR_ID                   0x0215
 #define IMX179_SENSOR_ID                        0x0179
@@ -194,6 +195,10 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define S5K5E2YA_SENSOR_ID                      0x5e20
 #define S5K4H5YX_2LANE_SENSOR_ID                0x485B
 #define S5K4H5YC_SENSOR_ID                      0x485B
+#define S5K4H8_SENSOR_ID                        0x4088
+#define S5K4H8_SENSOR_ID_QT                     (0x4088+1)
+#define S5K4H8_SENSOR_ID_HLT                    (0x4088+2)
+#define S5K4H8_SENSOR_ID_BLX                    (0x4088+3)
 #define S5K83AFX_SENSOR_ID                      0x01C4
 #define S5K5CAGX_SENSOR_ID                      0x05ca
 #define S5K8AAYX_MIPI_SENSOR_ID                 0x08aa
@@ -239,6 +244,8 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define MT9P017MIPI_SENSOR_ID                   0x4800
 #define MT9T113MIPI_SENSOR_ID                   0x4680
 /*GC*/
+#define GC2355_SENSOR_ID                        0x2355
+#define GC2375_SENSOR_ID                        0x2375
 #define GC2235_SENSOR_ID                        0x2235
 #define GC2035_SENSOR_ID                        0x2035
 #define GC2145_SENSOR_ID                        0x2145
@@ -250,6 +257,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*SP*/
 #define SP0A19_YUV_SENSOR_ID                    0xA6
 #define SP2518_YUV_SENSOR_ID                    0x53
+#define SP2509MIPI_SENSOR_ID                    0x2509
 /*A*/
 #define A5141MIPI_SENSOR_ID                     0x4800
 #define A5142MIPI_SENSOR_ID                     0x4800
@@ -281,18 +289,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*Others*/
 #define SHARP3D_SENSOR_ID                       0x003d
 #define T8EV5_SENSOR_ID                         0x1011
-//luminjie@wind-mobi.com 20161212 begin
-#define IMX219_SENSOR_ID                        0x0219
-#define S5K4H8_SENSOR_ID                        0x4088
-//luminjie@wind-mobi.com 20170613 begin
-#define S5K4H8_SENSOR_ID_QT                     0x4088+1
-#define S5K4H8_SENSOR_ID_HLT                    0x4088+2
-#define S5K4H8_SENSOR_ID_BLX                    0x4088+3
-//luminjie@wind-mobi.com 20170613 end
-#define SP2509MIPI_SENSOR_ID					0x2509
-#define GC2355_SENSOR_ID                        0x2355
-#define GC2375_SENSOR_ID                        0x2375
-//luminjie@wind-mobi.com 20161212 end
+
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
@@ -306,6 +303,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_IMX258_MIPI_MONO         "imx258mipimono"
 #define SENSOR_DRVNAME_IMX230_MIPI_RAW          "imx230mipiraw"
 #define SENSOR_DRVNAME_IMX220_MIPI_RAW          "imx220mipiraw"
+#define SENSOR_DRVNAME_IMX219_MIPI_RAW          "imx219mipiraw"
 #define SENSOR_DRVNAME_IMX214_MIPI_MONO         "imx214mipimono"
 #define SENSOR_DRVNAME_IMX214_MIPI_RAW          "imx214mipiraw"
 #define SENSOR_DRVNAME_IMX179_MIPI_RAW          "imx179mipiraw"
@@ -371,6 +369,10 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 #define SENSOR_DRVNAME_S5K4ECGX_MIPI_YUV        "s5k4ecgxmipiyuv"
 #define SENSOR_DRVNAME_S5K5CAGX_YUV             "s5k5cagxyuv"
 #define SENSOR_DRVNAME_S5K4H5YX_2LANE_MIPI_RAW  "s5k4h5yx2lanemipiraw"
+#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW          "s5k4h8mipiraw"
+#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_QT       "s5k4h8mipirawqt"
+#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_HLT      "s5k4h8mipirawhlt"
+#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_BLX      "s5k4h8mipirawblx"
 #define SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW        "s5k5e2yamipiraw"
 #define SENSOR_DRVNAME_S5K8AAYX_MIPI_YUV        "s5k8aayxmipiyuv"
 #define SENSOR_DRVNAME_S5K8AAYX_YUV             "s5k8aayxyuv"
@@ -401,6 +403,8 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*GC*/
 #define SENSOR_DRVNAME_GC2035_YUV               "gc2035_yuv"
 #define SENSOR_DRVNAME_GC2235_RAW               "gc2235_raw"
+#define SENSOR_DRVNAME_GC2355_MIPI_RAW          "gc2355mipiraw"
+#define SENSOR_DRVNAME_GC2375_MIPI_RAW          "gc2375mipiraw"
 #define SENSOR_DRVNAME_GC0330_YUV               "gc0330_yuv"
 #define SENSOR_DRVNAME_GC0329_YUV               "gc0329yuv"
 #define SENSOR_DRVNAME_GC2145_MIPI_YUV          "gc2145mipiyuv"
@@ -411,6 +415,7 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*SP*/
 #define SENSOR_DRVNAME_SP0A19_YUV               "sp0a19yuv"
 #define SENSOR_DRVNAME_SP2518_YUV               "sp2518yuv"
+#define SENSOR_DRVNAME_SP2509_MIPI_RAW          "sp2509mipiraw"
 /*A*/
 #define SENSOR_DRVNAME_A5141_MIPI_RAW           "a5141mipiraw"
 #define SENSOR_DRVNAME_A5142_MIPI_RAW           "a5142mipiraw"
@@ -433,18 +438,8 @@ NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
 /*Test*/
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW_5MP      "imx135mipiraw5mp"
 #define SENSOR_DRVNAME_IMX135_MIPI_RAW_8MP      "imx135mipiraw8mp"
-//luminjie@wind-mobi.com 20161212 begin
-#define SENSOR_DRVNAME_IMX219_MIPI_RAW          "imx219mipiraw"
-#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW          "s5k4h8mipiraw"
-//luminjie@wind-mobi.com 20170613 begin
-#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_QT       "s5k4h8mipirawqt"
-#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_HLT       "s5k4h8mipirawhlt"
-#define SENSOR_DRVNAME_S5K4H8_MIPI_RAW_BLX       "s5k4h8mipirawblx"
-//luminjie@wind-mobi.com 20170613 end
-#define SENSOR_DRVNAME_SP2509_MIPI_RAW         	"sp2509mipiraw"
-#define SENSOR_DRVNAME_GC2355_MIPI_RAW          "gc2355mipiraw"
-#define SENSOR_DRVNAME_GC2375_MIPI_RAW          "gc2375mipiraw"
-//luminjie@wind-mobi.com 20161212 end
+
+
 /*******************************************************************************
 *
 ********************************************************************************/
