@@ -62,7 +62,9 @@
 #define BATTERY_UNDER_VOL		(2)
 #define BATTERY_OVER_TEMP		(3)
 #define ADC_SAMPLE_TIMES        (5)
-
+#ifdef CONFIG_WIND_BATTERY_MODIFY
+#define charger_UNDER_VOL       (6)
+#endif
 /*****************************************************************************
  *  Pulse Charging State
  ****************************************************************************/
@@ -248,9 +250,11 @@ struct battery_custom_data {
 	int usb_charger_current_unconfigured;
 	int usb_charger_current_configured;
 	int usb_charger_current;
+	int usb_charger_input_current;  
 	int ac_charger_input_current;
 	int ac_charger_current;
 	int non_std_ac_charger_current;
+	int non_std_ac_charger_input_current;
 	int charging_host_charger_current;
 	int apple_0_5a_charger_current;
 	int apple_1_0a_charger_current;

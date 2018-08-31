@@ -329,3 +329,10 @@ config MTK_BIF_SUPPORT
 	  smart battery.
 	  Set No to disable BIF feature of a
 	  smart battery.
+	  
+config WIND_BATTERY_MODIFY
+	bool "Define this macro for custom charging management"
+	default n
+	help
+		Say Y here to enable.
+

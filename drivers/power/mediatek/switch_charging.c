@@ -464,6 +464,7 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 {
 	CHR_CURRENT_ENUM chr_type_ichg = 0;
 	CHR_CURRENT_ENUM chr_type_aicr = 0;
+	return 0;  //modify by qiangang 20161018
 
 	mutex_lock(&g_ichg_access_mutex);
 	if (current_limit != -1) {
@@ -703,12 +704,12 @@ void select_charging_current(void)
 			}
 #else
 			{
-				g_temp_input_CC_value = batt_cust_data.usb_charger_current;
+				g_temp_input_CC_value = batt_cust_data.usb_charger_input_current;  //modify by qiangang 20170504
 				g_temp_CC_value = batt_cust_data.usb_charger_current;
 			}
 #endif
 		} else if (BMT_status.charger_type == NONSTANDARD_CHARGER) {
-			g_temp_input_CC_value = batt_cust_data.non_std_ac_charger_current;
+			g_temp_input_CC_value = batt_cust_data.non_std_ac_charger_input_current; //modify by qiangang 20170504
 			g_temp_CC_value = batt_cust_data.non_std_ac_charger_current;
 
 		} else if (BMT_status.charger_type == STANDARD_CHARGER) {
@@ -925,6 +926,7 @@ static void mtk_select_cv(void)
 static void pchr_turn_on_charging(void)
 {
 	u32 charging_enable = KAL_TRUE;
+	BATTERY_VOLTAGE_ENUM cv_voltage;
 
 #ifdef CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT
 	if (BMT_status.charger_exist)
@@ -959,8 +961,25 @@ static void pchr_turn_on_charging(void)
 			charging_enable = KAL_FALSE;
 			battery_log(BAT_LOG_CRTI,
 				"[BATTERY] charging current is set 0mA, turn off charging !\r\n");
-		} else /* Set CV Voltage */
-			mtk_select_cv();
+		} else {     
+			/* Set CV Voltage */
+		mtk_select_cv();
+
+		battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
+						 &g_temp_input_CC_value);
+		battery_charging_control(CHARGING_CMD_SET_CURRENT,&g_temp_CC_value);
+		#if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
+			if (batt_cust_data.high_battery_voltage_support) {
+				cv_voltage = BATTERY_VOLT_04_400000_V;
+				}	 else {
+				cv_voltage = BATTERY_VOLT_04_200000_V;
+			}
+			
+			if((BMT_status.temperature > 45) && (BMT_status.temperature < 55) &&(BMT_status.bat_vol > 4100))	{
+					charging_enable = KAL_FALSE;
+				}
+		#endif
+			}
 
 	}
 
@@ -1123,9 +1142,18 @@ PMU_STATUS BAT_BatteryHoldAction(void)
 	return PMU_STATUS_OK;
 }
 
+#ifdef CONFIG_WIND_BATTERY_MODIFY 
+extern unsigned int g_batt_temp_status ;
+#endif
+
 PMU_STATUS BAT_BatteryStatusFailAction(void)
 {
+
+	#ifdef CONFIG_WIND_BATTERY_MODIFY
+	unsigned int charging_enable= KAL_FALSE;
+	#else
 	unsigned int charging_enable;
+	#endif
 
 	battery_log(BAT_LOG_CRTI, "[BATTERY] BAD Battery status... Charging Stop !!\n\r");
 
@@ -1147,7 +1175,23 @@ PMU_STATUS BAT_BatteryStatusFailAction(void)
 	BMT_status.POSTFULL_charging_time = 0;
 
 	/*  Disable charger */
+	#ifdef CONFIG_WIND_BATTERY_MODIFY
+	BMT_status.charger_vol=battery_meter_get_charger_voltage();
+	if((BMT_status.charger_vol < (batt_cust_data.v_charger_max-300))&&(BMT_status.charger_protect_status == charger_OVER_VOL)&&(g_batt_temp_status ==TEMP_POS_NORMAL)) {
+		BMT_status.bat_charging_state = CHR_CC;
+		charging_enable = KAL_TRUE;
+	}
+	else if((BMT_status.charger_vol > (batt_cust_data.v_charger_min+300))&&(BMT_status.charger_protect_status == charger_UNDER_VOL)&&(g_batt_temp_status ==TEMP_POS_NORMAL))	{
+		BMT_status.bat_charging_state = CHR_CC;
+		charging_enable = KAL_TRUE;
+	}
+	else {
 	charging_enable = KAL_FALSE;
+	}
+	#else
+	charging_enable = KAL_FALSE;
+	#endif
+
 	battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
 
 	/* Disable PE+/PE+20 */
