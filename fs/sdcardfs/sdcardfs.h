@@ -45,6 +45,12 @@
 #include <linux/list.h>
 #include "multiuser.h"
 
+/* ioctl command */
+#define SDCARDFS_IOCTL_MAGIC	'e'
+#define SDCARDFS_IOC_DIS_ACCESS	_IO(SDCARDFS_IOCTL_MAGIC, 1)
+
+#define SDCARDFS_MOUNT_ACCESS_DISABLE	0x00000020
+
 /* the file system name */
 #define SDCARDFS_NAME "sdcardfs"
 
@@ -55,6 +61,9 @@
 #define UDBG printk(KERN_DEFAULT "DBG:%s:%s:%d\n", __FILE__, __func__, __LINE__)
 
 #define SDCARDFS_DIRENT_SIZE 256
+
+/*default reserved size*/
+#define LOWER_FS_MIN_FREE_SIZE  50 /* 50MB */
 
 /* temporary static uid settings for development */
 #define AID_ROOT             0	/* uid for accessing /mnt/sdcard & extSdcard */
@@ -195,6 +204,8 @@ struct sdcardfs_mount_options {
 struct sdcardfs_sb_info {
 	struct super_block *sb;
 	struct super_block *lower_sb;
+	struct super_block *s_sb;
+	struct list_head s_list;
 	/* derived perm policy : some of options have been added
 	 * to sdcardfs_mount_options (Android 4.4 support) */
 	struct sdcardfs_mount_options options;
@@ -203,7 +214,13 @@ struct sdcardfs_sb_info {
 	struct path obbpath;
 	void *pkgl_id;
 	struct list_head list;
+	unsigned int flag;
 };
+
+void sdcardfs_drop_shared_icache(struct super_block *, struct inode *);
+void sdcardfs_drop_sb_icache(struct super_block *, unsigned long);
+void sdcardfs_add_super(struct sdcardfs_sb_info *, struct super_block *);
+void sdcardfs_truncate_share(struct super_block *, struct inode *, loff_t newsize);
 
 /*
  * inode to private data

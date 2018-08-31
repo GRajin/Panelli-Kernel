@@ -1102,7 +1102,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	unsigned int val;
 	char magic_pattern[64];
 #endif
-
+	char md_sub_id[4];
 	switch (cmd) {
 	case CCCI_IOC_GET_MD_PROTOCOL_TYPE:
 		CCCI_ERROR_LOG(md_id, CHAR, "Call CCCI_IOC_GET_MD_PROTOCOL_TYPE!\n");
@@ -1393,6 +1393,13 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 
 	case CCCI_IOC_GET_EXT_MD_POST_FIX:
 		if (copy_to_user((void __user *)arg, ccci_md_get_post_fix(proxy_p->md_obj), IMG_POSTFIX_LEN)) {
+			CCCI_BOOTUP_LOG(md_id, CHAR, "CCCI_IOC_GET_EXT_MD_POST_FIX: copy_to_user fail\n");
+			ret = -EFAULT;
+		}
+		break;
+	case CCCI_IOC_GET_MD_SUB_ID:
+		snprintf(md_sub_id, sizeof(md_sub_id), "%d", 1);
+		if (copy_to_user((void __user *)arg, md_sub_id, sizeof(md_sub_id))) {
 			CCCI_BOOTUP_LOG(md_id, CHAR, "CCCI_IOC_GET_EXT_MD_POST_FIX: copy_to_user fail\n");
 			ret = -EFAULT;
 		}

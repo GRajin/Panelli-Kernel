@@ -181,19 +181,19 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 				break;
 #endif
 			case GED_BRIDGE_COMMAND_GE_ALLOC:
-				SET_FUNC_AND_CHECK(ged_bridge_ge_alloc, GE_ALLOC);
+				pFunc = (ged_bridge_func_type *)ged_bridge_ge_alloc;
 				break;
 			case GED_BRIDGE_COMMAND_GE_RETAIN:
-				SET_FUNC_AND_CHECK(ged_bridge_ge_retain, GE_RETAIN);
+				pFunc = (ged_bridge_func_type *)ged_bridge_ge_retain;
 				break;
 			case GED_BRIDGE_COMMAND_GE_RELEASE:
-				SET_FUNC_AND_CHECK(ged_bridge_ge_release, GE_RELEASE);
+				pFunc = (ged_bridge_func_type *)ged_bridge_ge_release;
 				break;
 			case GED_BRIDGE_COMMAND_GE_GET:
-				SET_FUNC_AND_CHECK(ged_bridge_ge_get, GE_GET);
+				pFunc = (ged_bridge_func_type *)ged_bridge_ge_get;
 				break;
 			case GED_BRIDGE_COMMAND_GE_SET:
-				SET_FUNC_AND_CHECK(ged_bridge_ge_set, GE_SET);
+				pFunc = (ged_bridge_func_type *)ged_bridge_ge_set;
 				break;
 			default:
 				GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));

@@ -1804,16 +1804,20 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 
 	/* if wait longer than double OID timeout timer, then will show backtrace who held halt lock.
 		at this case, we will return kalIoctl failure because tx_thread may be hung */
-	if (kalHaltLock(2 * WLAN_OID_TIMEOUT_THRESHOLD))
+	if (kalHaltLock(2 * WLAN_OID_TIMEOUT_THRESHOLD)) {
+		DBGLOG(OID, WARN, "kalIoctl: WLAN_STATUS_FAILURE\n");
 		return WLAN_STATUS_FAILURE;
+	}
 
 	if (kalIsHalted()) {
 		kalHaltUnlock();
+		DBGLOG(OID, WARN, "kalIoctl: WLAN_STATUS_ADAPTER_NOT_READY\n");
 		return WLAN_STATUS_ADAPTER_NOT_READY;
 	}
 
 	if (down_interruptible(&prGlueInfo->ioctl_sem)) {
 		kalHaltUnlock();
+		DBGLOG(OID, WARN, "kalIoctl: WLAN_STATUS_FAILURE\n");
 		return WLAN_STATUS_FAILURE;
 	}
 	rHaltCtrl.fgHeldByKalIoctl = TRUE;
@@ -2099,6 +2103,7 @@ int tx_thread(void *data)
 	int ret = 0;
 
 	BOOLEAN fgNeedHwAccess = FALSE;
+	BOOLEAN fgAllowOidHandle = FALSE;
 
 	struct sk_buff *prSkb = NULL;
 
@@ -2223,19 +2228,25 @@ int tx_thread(void *data)
 				} else
 #endif
 				{
-					if (FALSE == prIoReq->fgRead) {
+					if (!completion_done(&prGlueInfo->rPendComp))
+						fgAllowOidHandle = TRUE;
+					else
+						fgAllowOidHandle = FALSE;
+
+					if (fgAllowOidHandle && (FALSE == prIoReq->fgRead)) {
 						prIoReq->rStatus = wlanSetInformation(prIoReq->prAdapter,
 										      prIoReq->pfnOidHandler,
 										      prIoReq->pvInfoBuf,
 										      prIoReq->u4InfoBufLen,
 										      prIoReq->pu4QryInfoLen);
-					} else {
+					} else if (fgAllowOidHandle) {
 						prIoReq->rStatus = wlanQueryInformation(prIoReq->prAdapter,
 											prIoReq->pfnOidHandler,
 											prIoReq->pvInfoBuf,
 											prIoReq->u4InfoBufLen,
 											prIoReq->pu4QryInfoLen);
-					}
+					} else
+						DBGLOG(OID, WARN, "completion_done = true, do nothing\n");
 
 					if (prIoReq->rStatus != WLAN_STATUS_PENDING
 						&& (!completion_done(&prGlueInfo->rPendComp))) {

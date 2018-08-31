@@ -17,6 +17,7 @@
 #include <linux/of_fdt.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <linux/switch.h>
 
 #include <mt-plat/mt_boot_common.h>
 #include "ccci_config.h"
@@ -31,6 +32,7 @@ const struct of_device_id swtp_of_match[] = {
 #define SWTP_MAX_SUPPORT_MD 1
 struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 
+struct switch_dev g_sdev;
 
 static int swtp_switch_mode(struct swtp_t *swtp)
 {
@@ -57,6 +59,7 @@ static int swtp_switch_mode(struct swtp_t *swtp)
 			irq_set_irq_type(swtp->irq, IRQ_TYPE_LEVEL_HIGH);
 		swtp->curr_mode = SWTP_EINT_PIN_PLUG_IN;
 	}
+	schedule_delayed_work(&swtp->switch_work, 0);
 	CCCI_LEGACY_ALWAYS_LOG(swtp->md_id, KERN, "%s mode %d\n", __func__, swtp->curr_mode);
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
@@ -132,6 +135,21 @@ static void swtp_tx_work(struct work_struct *work)
 
 	ret = swtp_send_tx_power_mode(swtp);
 }
+
+static void swtp_switch_work(struct work_struct *work)
+{
+	struct swtp_t *swtp = container_of(to_delayed_work(work), struct swtp_t, switch_work);
+
+    if (swtp->curr_mode == SWTP_EINT_PIN_PLUG_OUT) {
+        if (strcmp(g_sdev.name, "dumb"))
+            switch_set_state(&g_sdev, 0);
+    }
+    else {
+        if (strcmp(g_sdev.name, "dumb"))
+            switch_set_state(&g_sdev, 1);
+    }
+}
+
 void ccci_swtp_test(int irq)
 {
 	swtp_irq_func(irq, &swtp_data[0]);
@@ -147,6 +165,20 @@ int swtp_md_tx_power_req_hdlr(int md_id, int data)
 	swtp = &swtp_data[md_id];
 	ret = swtp_send_tx_power_mode(swtp);
 	return 0;
+}
+
+static ssize_t switch_rf_print_state(struct switch_dev *sdev, char *buf)
+{
+    const char *state;
+
+    if (switch_get_state(sdev))
+        state = "1";
+    else
+        state = "0";
+
+    if (state) return sprintf(buf, "%s\n", state);
+
+    return 0;
 }
 
 int swtp_init(int md_id)
@@ -165,27 +197,35 @@ int swtp_init(int md_id)
 	swtp_data[md_id].curr_mode = SWTP_EINT_PIN_PLUG_OUT;
 	spin_lock_init(&swtp_data[md_id].spinlock);
 	INIT_DELAYED_WORK(&swtp_data[md_id].delayed_work, swtp_tx_work);
+	INIT_DELAYED_WORK(&swtp_data[md_id].switch_work, swtp_switch_work);
 
 	node = of_find_matching_node(NULL, swtp_of_match);
 	if (node) {
+        g_sdev.name = "rfswitch";
+        g_sdev.print_state = switch_rf_print_state;
+        g_sdev.state = 0;
+        if (switch_dev_register(&g_sdev)) {
+            ret = -1;
+            g_sdev.name = "dumb";
+            CCCI_LEGACY_ERR_LOG(md_id, KERN, "switch device register failure\n");
+        }
+    
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		of_property_read_u32_array(node, "interrupts", ints1, ARRAY_SIZE(ints1));
 		swtp_data[md_id].gpiopin = ints[0];
 		swtp_data[md_id].setdebounce = ints[1];
 		swtp_data[md_id].eint_type = ints1[1];
+
+        gpio_direction_input(swtp_data[md_id].gpiopin);
 		gpio_set_debounce(swtp_data[md_id].gpiopin, swtp_data[md_id].setdebounce);
 		swtp_data[md_id].irq = irq_of_parse_and_map(node, 0);
 		ret = request_irq(swtp_data[md_id].irq, swtp_irq_func,
-		    //qiumeng@wind-mobi.com 20170122 begin
 			(swtp_data[md_id].eint_type == IRQ_TYPE_LEVEL_HIGH) ? IRQF_TRIGGER_HIGH : IRQF_TRIGGER_LOW, 
             "swtp-eint", &swtp_data[md_id]);
-			//qiumeng@wind-mobi.com 20170122 end
 		if (ret != 0) {
 			CCCI_LEGACY_ERR_LOG(md_id, KERN, "swtp-eint IRQ LINE NOT AVAILABLE\n");
 		} else {
-		    //qiumeng@wind-mobi.com 20170122 begin
             enable_irq(swtp_data[md_id].irq);
-			//qiumeng@wind-mobi.com 20170122 end
 			CCCI_LEGACY_ALWAYS_LOG(md_id, KERN,
 				"swtp-eint set EINT finished, irq=%d, setdebounce=%d, eint_type=%d\n",
 				swtp_data[md_id].irq, swtp_data[md_id].setdebounce, swtp_data[md_id].eint_type);

@@ -185,14 +185,6 @@
 		flashlights: flashlights@ {
 			compatible = "mediatek,camera_flashlights";
 		};
-		
-		sim1_hot_plug: sim1_hot_plug {
-			compatible = "mediatek,sim1_hot_plug";
-		};
-		
-		sim2_hot_plug: sim2_hot_plug {
-			compatible = "mediatek,sim2_hot_plug";
-		};
 };
 /* sensor gpio standization */
 &pio {
@@ -238,21 +230,24 @@
 
 };
 /* sensor end */
+
 &accdet {
 		accdet-mic-vol = <7>;
-		headset-mode-setting = <0x500 0x200 1 0x1F0 0x800 0x800 0x20>;
+		headset-mode-setting = <0x500 0x500 1 0x1F0 0x800 0x800 0x20>;
 		accdet-plugout-debounce = <20>;
 		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
 		accdet-mic-mode = <1>;
 		/*0--MD_MAX--UP_MAX--DW_MAX*/
-		headset-three-key-threshold = <0 80 220 500>;
+		headset-three-key-threshold = <0 80 175 500>;
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 450>;
+		/* ACCDET GPIO standardization ACC mode use */
 		pinctrl-names = "default", "state_eint_as_int";
-		pinctrl-0 = <&accdet_pins_default>;
-		pinctrl-1 = <&accdet_pins_eint_int>;
+		pinctrl-0 = <&ACCDET_pins_default>;
+		pinctrl-1 = <&ACCDET_pins_eint_int>;
 		status = "okay";
 };
+
 &touch {
 	tpd-resolution = <720 1280>;
 	/*tp virtual button for panelli*/
@@ -629,7 +624,7 @@
 
 	nfc_ven_high: state_ven_high {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO4__FUNC_GPIO4>;
+			pins = <PINMUX_GPIO24__FUNC_GPIO24>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -637,7 +632,7 @@
 
 	nfc_ven_low: state_ven_low {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO4__FUNC_GPIO4>;
+			pins = <PINMUX_GPIO24__FUNC_GPIO24>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -645,7 +640,7 @@
 
 	nfc_rst_high: state_rst_high {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+			pins = <PINMUX_GPIO23__FUNC_GPIO23>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -653,7 +648,7 @@
 
 	nfc_rst_low: state_rst_low {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO3__FUNC_GPIO3>;
+			pins = <PINMUX_GPIO23__FUNC_GPIO23>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -661,7 +656,7 @@
 
 	nfc_eint_high: state_eint_high {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO1__FUNC_GPIO1>;
+			pins = <PINMUX_GPIO21__FUNC_GPIO21>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -669,7 +664,7 @@
 
 	nfc_eint_low: state_eint_low {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO1__FUNC_GPIO1>;
+			pins = <PINMUX_GPIO21__FUNC_GPIO21>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -677,7 +672,7 @@
 
 	nfc_irq_init: state_irq_init {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO2__FUNC_GPIO2>;
+			pins = <PINMUX_GPIO22__FUNC_GPIO22>;
 			slew-rate = <0>;
 			bias-pull-down = <00>;
 		};

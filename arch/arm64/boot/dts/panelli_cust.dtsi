@@ -1,34 +1,38 @@
+/*************************
+ * Panelli Customized Setting dtsi file
+*************************/
+
+/* Battery Charger */
 &i2c1 {
+	#address-cells = <1>;
+	#size-cells = <0>;
 	swithing_charger@6a {
 		compatible = "mediatek,swithing_charger";
 		reg = <0x6a>;
+		status = "okay";
 	};
 };
 
-&keypad {
-	mediatek,kpd-key-debounce = <1024>;
-	mediatek,kpd-sw-pwrkey = <116>;
-	mediatek,kpd-hw-pwrkey = <8>;
-	mediatek,kpd-use-extend-type = <0>;
-	/*HW Keycode [0~71] -> Linux Keycode*/
-	mediatek,kpd-hw-map-num = <72>;
-	mediatek,kpd-hw-init-map = <114 115 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
-				0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
-				0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 >;
-	mediatek,kpd-pwrkey-eint-gpio = <0>;
-	mediatek,kpd-pwkey-gpio-din  = <0>;
-	mediatek,kpd-hw-dl-key0 = <1>;
-	mediatek,kpd-hw-dl-key1 = <0>;
-	mediatek,kpd-hw-dl-key2 = <8>;
-	mediatek,kpd-hw-recovery-key = <1>;
-	mediatek,kpd-hw-factory-key = <0>;
-	status = "okay";
-};
-
+/* Camera Calibration */
 &pio {
-	accdet_pins_default: eint0default {
+	cam_cal_drv{
+		compatible = "mediatek,cam_cal_drv";
+		main_bus = <0>;
+		sub_bus = <0>;
 	};
-	accdet_pins_eint_int: eint@0 {
+};
+
+
+/* External Speaker */
+&pcm {
+    extspkamp-gpio = <120 0>;
+};
+
+/* Headset ACCDET GPIO for ACC headset mode */
+&pio {
+	ACCDET_pins_default:eint6default {
+	};
+	ACCDET_pins_eint_int:eint@6 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO6__FUNC_GPIO6>;
 			slew-rate = <0>;
@@ -37,24 +41,10 @@
 	};
 };
 
-&audgpio {
-    extspkamp-gpio = <120 0>;
-};
-
-&sim1_hot_plug {
-	status = "okay";
-};
-
-&sim2_hot_plug {
-	status = "okay";
-};
-
-/* FLASHLIGHT GPIO begin */
-
+/* Flashlight */
 &pio {
     flashlights_pins_default: default {
     };
-
     flashlights_pins_back_high: back_high@1 {
         pins_cmd_dat {
             pins = <PINMUX_GPIO1__FUNC_GPIO1>;
@@ -62,7 +52,6 @@
             output-high;
         };
     };
-
     flashlights_pins_back_low: back_low@0 {
         pins_cmd_dat {
             pins = <PINMUX_GPIO1__FUNC_GPIO1>;
@@ -77,7 +66,6 @@
             output-high;
         };
     };
-
     flashlights_pins_backpwm_low: backpwm_low@0 {
         pins_cmd_dat {
             pins = <PINMUX_GPIO43__FUNC_GPIO43>;
@@ -92,7 +80,6 @@
             output-high;
         };
     };
-
     flashlights_pins_sub_low: sub_low@0 {
         pins_cmd_dat {
             pins = <PINMUX_GPIO4__FUNC_GPIO4>;
@@ -113,5 +100,25 @@
     pinctrl-6 = <&flashlights_pins_sub_low>;
     status = "okay";
 };
-/* FLASHLIGHT GPIO end */
+
+/* Keypad */
+&keypad {
+	mediatek,kpd-key-debounce = <1024>;
+	mediatek,kpd-sw-pwrkey = <116>;
+	mediatek,kpd-hw-pwrkey = <8>;
+	mediatek,kpd-use-extend-type = <0>;
+	/*HW Keycode [0~71] -> Linux Keycode*/
+	mediatek,kpd-hw-map-num = <72>;
+	mediatek,kpd-hw-init-map = <114 115 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+				0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+				0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 >;
+	mediatek,kpd-pwrkey-eint-gpio = <0>;
+	mediatek,kpd-pwkey-gpio-din  = <0>;
+	mediatek,kpd-hw-dl-key0 = <1>;
+	mediatek,kpd-hw-dl-key1 = <0>;
+	mediatek,kpd-hw-dl-key2 = <8>;
+	mediatek,kpd-hw-recovery-key = <1>;
+	mediatek,kpd-hw-factory-key = <0>;
+	status = "okay";
+};
 

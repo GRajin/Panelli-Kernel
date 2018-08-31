@@ -3,6 +3,7 @@
 ccflags-y += \
 	-I$(src)/include \
 	-I$(src)/../linux/include \
+	-I$(src)/../core/include \
 	-I$(src)/../include \
 	-I$(src)/../../common_detect
 

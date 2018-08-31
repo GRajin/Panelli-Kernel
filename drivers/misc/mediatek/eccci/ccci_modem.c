@@ -785,7 +785,7 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 				rt_f_element.feature[0] = ((unsigned int *)&t.tv_sec)[0];
 				rt_f_element.feature[1] = ((unsigned int *)&t.tv_sec)[1];
 				/*sys_tz.tz_minuteswest; */
-				rt_f_element.feature[2] = current_fs_time;
+				rt_f_element.feature[2] = current_time_zone;
 				/*not used for now */
 				rt_f_element.feature[3] = sys_tz.tz_dsttime;
 				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);

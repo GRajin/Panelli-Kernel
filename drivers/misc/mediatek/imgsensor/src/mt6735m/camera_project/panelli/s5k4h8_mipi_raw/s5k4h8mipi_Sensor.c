@@ -492,7 +492,7 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
     //kal_uint8 iReg;
 
     LOG_INF("le:0x%x, se:0x%x, gain:0x%x\n",le,se,gain);
-	se = le / 4;   // 长曝光时间是短曝光时间8倍
+	se = le / 4;
 #if 1    
     if (imgsensor.ihdr_en) {
 

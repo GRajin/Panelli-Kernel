@@ -153,8 +153,7 @@ int fan5405_write_byte(unsigned char cmd, unsigned char writeData)
   *   [Read / Write Function]
   *
   *********************************************************/
-unsigned int fan5405_read_interface(unsigned char RegNum, unsigned char *val, unsigned char MASK,
-				  unsigned char SHIFT)
+unsigned int fan5405_read_interface(unsigned char RegNum, unsigned char *val, unsigned char MASK, unsigned char SHIFT)
 {
 	unsigned char fan5405_reg = 0;
 	int ret = 0;
@@ -173,8 +172,7 @@ unsigned int fan5405_read_interface(unsigned char RegNum, unsigned char *val, un
 	return ret;
 }
 
-unsigned int fan5405_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK,
-				  unsigned char SHIFT)
+unsigned int fan5405_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK, unsigned char SHIFT)
 {
 	unsigned char fan5405_reg = 0;
 	int ret = 0;
@@ -620,6 +618,7 @@ exit:
   *
   *********************************************************/
 unsigned char g_reg_value_fan5405 = 0;
+
 static ssize_t show_fan5405_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	battery_log(BAT_LOG_CRTI, "[show_fan5405_access] 0x%x\n", g_reg_value_fan5405);

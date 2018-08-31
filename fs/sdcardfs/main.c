@@ -63,7 +63,7 @@ static int parse_options(struct super_block *sb, char *options, int silent,
 	opts->fs_user_id = 0;
 	opts->gid = 0;
 	/* by default, 0MB is reserved */
-	opts->reserved_mb = 0;
+	opts->reserved_mb = LOWER_FS_MIN_FREE_SIZE;
 
 	*debug = 0;
 
@@ -282,6 +282,7 @@ static int sdcardfs_read_super(struct super_block *sb, const char *dev_name,
 	list_add(&sb_info->list, &sdcardfs_super_list);
 	mutex_unlock(&sdcardfs_super_list_lock);
 
+	sdcardfs_add_super(sb_info, sb);
 	if (!silent)
 		printk(KERN_INFO "sdcardfs: mounted on top of %s type %s\n",
 				dev_name, lower_sb->s_type->name);

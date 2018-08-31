@@ -598,10 +598,9 @@ static unsigned int lcm_ata_check(unsigned char *buf)
 	#ifdef CONFIG_WIND_DEVICE_INFO
 	if(!strcmp(g_lcm_name,"nt35512_cmi_720p_oufeiguang_drv")){
 		return 1;
-	}else{
-		return -1;
-	}
+	}else
 	#endif
+		return -1;
 }
 //liujinzhou@wind-mobi.com modify at 20161230 end
 

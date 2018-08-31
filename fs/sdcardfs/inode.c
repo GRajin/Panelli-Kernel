@@ -52,12 +52,19 @@ void revert_fsids(const struct cred * old_cred)
 static int sdcardfs_create(struct inode *dir, struct dentry *dentry,
 			 umode_t mode, bool want_excl)
 {
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
+
 	if(!check_caller_access_to_name(dir, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n"
 						 "  dentry: %s, task:%s\n",
 						 __func__, dentry->d_name.name, current->comm);
 		return -EACCES;
 	}
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		return -ENOENT;
+	}
+
 	return sdcardfs_work_dispatch_create(dir, dentry, mode, want_excl);
 }
 
@@ -103,8 +110,30 @@ out:
 }
 #endif
 
+static void sdcardfs_unlink_alias(struct inode *dir, struct dentry *dentry)
+{
+	struct sdcardfs_sb_info *sbinfo = SDCARDFS_SB(dir->i_sb);
+	struct sdcardfs_sb_info *sbinfo2;
+	struct inode *inode = d_inode(dentry);
+	struct inode *inode2;
+
+	mutex_lock(&sdcardfs_super_list_lock);
+	list_for_each_entry(sbinfo2, &sdcardfs_super_list, list) {
+		if (sbinfo->lower_sb == sbinfo2->lower_sb && sbinfo2 != sbinfo) {
+			inode2 = ilookup(sbinfo2->sb, inode->i_ino);
+			if (inode2) {
+				d_prune_aliases(inode2);
+				iput(inode2);
+			}
+		}
+	}
+	mutex_unlock(&sdcardfs_super_list_lock);
+}
+
 static int sdcardfs_unlink(struct inode *dir, struct dentry *dentry)
 {
+	int err;
+
 	if(!check_caller_access_to_name(dir, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n"
 						 "  dentry: %s, task:%s\n",
@@ -112,7 +141,12 @@ static int sdcardfs_unlink(struct inode *dir, struct dentry *dentry)
 		return -EACCES;
 	}
 
-	return sdcardfs_work_dispatch_unlink(dir, dentry);
+	err = sdcardfs_work_dispatch_unlink(dir, dentry);
+
+	if (!err)
+		sdcardfs_unlink_alias(dir, dentry);
+
+	return err;
 }
 
 #if 0
@@ -149,12 +183,19 @@ out:
 
 static int sdcardfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
+
 	if(!check_caller_access_to_name(dir, dentry->d_name.name)) {
 		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n"
 						 "  dentry: %s, task:%s\n",
 						 __func__, dentry->d_name.name, current->comm);
 		return -EACCES;
 	}
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		return -ENOENT;
+	}
+
 	return sdcardfs_work_dispatch_mkdir(dir, dentry, mode);
 }
 
@@ -182,8 +223,10 @@ static int sdcardfs_rmdir(struct inode *dir, struct dentry *dentry)
 	sdcardfs_get_real_lower(dentry, &lower_path);
 
 	lower_dentry = lower_path.dentry;
-	lower_dir_dentry = lock_parent(lower_dentry);
 
+	sdcardfs_drop_shared_icache(dir->i_sb, lower_dentry->d_inode);
+
+	lower_dir_dentry = lock_parent(lower_dentry);
 	err = vfs_rmdir(lower_dir_dentry->d_inode, lower_dentry);
 	if (err)
 		goto out;
@@ -251,6 +294,7 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	struct dentry *trap = NULL;
 	struct dentry *new_parent = NULL;
 	struct path lower_old_path, lower_new_path;
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(old_dentry->d_sb);
 	const struct cred *saved_cred = NULL;
 
 	if(!check_caller_access_to_name(old_dir, old_dentry->d_name.name) ||
@@ -259,6 +303,11 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 						 "  new_dentry: %s, task:%s\n",
 						 __func__, new_dentry->d_name.name, current->comm);
 		err = -EACCES;
+		goto out_eacces;
+	}
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		err = -ENOENT;
 		goto out_eacces;
 	}
 
@@ -434,13 +483,21 @@ static int sdcardfs_permission(struct inode *inode, int mask)
 static int sdcardfs_setattr(struct dentry *dentry, struct iattr *ia)
 {
 	int err;
+    loff_t oldsize;
+    loff_t newsize;
 	struct dentry *lower_dentry;
 	struct inode *inode;
 	struct inode *lower_inode;
 	struct path lower_path;
 	struct iattr lower_ia;
+	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	struct dentry *parent;
 
+
+	if (sbi->flag && SDCARDFS_MOUNT_ACCESS_DISABLE) {
+		err = -ENOENT;
+		goto out_err;
+	}
 	inode = dentry->d_inode;
 
 	/*
@@ -496,7 +553,26 @@ static int sdcardfs_setattr(struct dentry *dentry, struct iattr *ia)
 			lockdep_on();
 			goto out;
 		}
-		truncate_setsize(inode, ia->ia_size);
+        /*
+         * i_size_write needs locking around it
+         * otherwise i_size_read() may spin forever
+         * (see include/linux/fs.h).
+         * similar to function fsstack_copy_inode_size
+         */
+        oldsize = i_size_read(inode);
+        newsize = ia->ia_size;
+
+        #if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
+        spin_lock(&inode->i_lock);
+        #endif
+        i_size_write(inode, newsize);
+        #if BITS_PER_LONG == 32 && defined(CONFIG_SMP)
+        spin_unlock(&inode->i_lock);
+        #endif
+        if (newsize > oldsize)
+            pagecache_isize_extended(inode, oldsize, newsize);
+        truncate_pagecache(inode, newsize);
+		sdcardfs_truncate_share(inode->i_sb, lower_dentry->d_inode, ia->ia_size);
 	}
 
 	/*

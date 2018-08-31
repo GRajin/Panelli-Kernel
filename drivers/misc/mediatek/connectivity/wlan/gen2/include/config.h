@@ -113,7 +113,7 @@
 
 #define CFG_SUPPORT_PERSIST_NETDEV		0	/* create NETDEV when system bootup */
 
-#define CFG_FORCE_USE_20BW			0 //modified by hebiao 20160608
+#define CFG_FORCE_USE_20BW			0//huyunge@wind-mobi.com 20170209 for 11n 40M
 
 #define CFG_SUPPORT_RN				1
 /*------------------------------------------------------------------------------
@@ -788,7 +788,7 @@
  * Flags of drop multicast packet when device suspend
  *------------------------------------------------------------------------------
  */
-#define CFG_SUPPORT_DROP_MC_PACKET		0
+#define CFG_SUPPORT_DROP_MC_PACKET		1
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
