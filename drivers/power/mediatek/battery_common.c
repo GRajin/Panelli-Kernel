@@ -242,6 +242,9 @@ static kal_bool charger_hv_detect_flag = KAL_FALSE;
 static DECLARE_WAIT_QUEUE_HEAD(charger_hv_detect_waiter);
 static struct hrtimer battery_kthread_timer;
 kal_bool g_battery_soc_ready = KAL_FALSE;
+static kal_bool fg_battery_shutdown;
+static kal_bool fg_bat_thread;
+static kal_bool fg_hv_thread;
 /*extern BOOL bat_spm_timeout;
 extern unsigned int _g_bat_sleep_total_time;*/
 
@@ -1979,7 +1982,7 @@ static void battery_update(struct battery_data *bat_data)
 			battery_log(BAT_LOG_CRTI, "[DLPT_POWER_OFF_EN] SOC=%d to power off\n",
 				    bat_data->BAT_CAPACITY);
 			if (cnt >= 2)
-				kernel_restart("DLPT reboot system");
+				orderly_reboot(true);
 
 		} else
 			cnt = 0;
@@ -2443,6 +2446,10 @@ void mt_battery_GetBatteryData(void)
 		    previous_SOC, BMT_status.SOC, BMT_status.UI_SOC, BMT_status.ZCV,
 		    BMT_status.charger_type, g_bcct_flag, get_usb_current_unlimited(),
 		    get_bat_charging_current_level(), BMT_status.IBattery / 10);
+	battery_log(BAT_LOG_CRTI, "v=%d,i=%d,t=%d,soc=%d,bcct:%d:%d I:%d Ibat:%d\n",
+		    bat_vol, ICharging, temperature, BMT_status.UI_SOC, g_bcct_flag,
+		    get_usb_current_unlimited(), get_bat_charging_current_level(),
+		    BMT_status.IBattery / 10);
 
 }
 
@@ -2799,14 +2806,10 @@ static void mt_battery_thermal_check(void)
 
 					power_supply_changed(bat_psy);
 
-					if (BMT_status.charger_exist == KAL_TRUE) {
-						/* can not power down due to charger exist, so need reset system */
-						battery_charging_control
-						    (CHARGING_CMD_SET_PLATFORM_RESET, NULL);
-					}
-					/* avoid SW no feedback */
-					battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
-					/* mt_power_off(); */
+					if (BMT_status.charger_exist == KAL_TRUE)
+						orderly_reboot(true);
+					else
+						orderly_poweroff(true);
 				}
 			}
 #endif
@@ -3008,7 +3011,7 @@ static void mt_kpoc_power_off_check(void)
 		if ((upmu_is_chr_det() == KAL_FALSE) && (BMT_status.charger_vol < 2500)) {	/* vbus < 2.5V */
 			battery_log(BAT_LOG_CRTI,
 				    "[bat_thread_kthread] Unplug Charger/USB In Kernel Power Off Charging Mode!  Shutdown OS!\r\n");
-			battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
+			orderly_poweroff(true);
 		}
 	}
 #endif
@@ -3141,9 +3144,11 @@ void do_chrdet_int_task(void)
 
 }
 
+
 void BAT_thread(void)
 {
 	static kal_bool battery_meter_initilized = KAL_FALSE;
+	static int first_time_update;
 
 	if (battery_meter_initilized == KAL_FALSE) {
 		battery_meter_initial();	/* move from battery_probe() to decrease booting time */
@@ -3152,19 +3157,34 @@ void BAT_thread(void)
 	}
 
 	mt_battery_charger_detect_check();
+	if (fg_battery_shutdown)
+		return;
+
 	mt_battery_GetBatteryData();
+	if (fg_battery_shutdown)
+		return;
+
 	if (BMT_status.charger_exist == KAL_TRUE)
 		check_battery_exist();
 
 	mt_battery_thermal_check();
 	mt_battery_notify_check();
 
-	if (BMT_status.charger_exist == KAL_TRUE) {
-		mt_battery_CheckBatteryStatus();
-		mt_battery_charging_algorithm();
+	if (first_time_update == 0) {
+		mt_battery_update_status();
+		if (BMT_status.charger_exist == KAL_TRUE) {
+			mt_battery_CheckBatteryStatus();
+			mt_battery_charging_algorithm();
+		}
+		first_time_update = 1;
+	} else {
+		if (BMT_status.charger_exist == KAL_TRUE && !fg_battery_shutdown) {
+			mt_battery_CheckBatteryStatus();
+			mt_battery_charging_algorithm();
+		}
+		mt_battery_update_status();
 	}
 
-	mt_battery_update_status();
 	mt_kpoc_power_off_check();
 }
 
@@ -3194,7 +3214,7 @@ int bat_thread_kthread(void *x)
 #endif
 
 	/* Run on a process content */
-	while (1) {
+	while (!fg_battery_shutdown) {
 		mutex_lock(&bat_mutex);
 
 		if (((chargin_hw_init_done == KAL_TRUE) && (battery_suspended == KAL_FALSE))
@@ -3217,7 +3237,10 @@ int bat_thread_kthread(void *x)
 
 		bat_thread_timeout = KAL_FALSE;
 		hrtimer_start(&battery_kthread_timer, ktime, HRTIMER_MODE_REL);
-		ktime = ktime_set(BAT_TASK_PERIOD, 0);	/* 10s, 10* 1000 ms */
+		/* 10s, 10* 1000 ms */
+		if (!fg_battery_shutdown)
+			ktime = ktime_set(BAT_TASK_PERIOD, 0);
+
 		if (chr_wake_up_bat == KAL_TRUE && g_smartbook_update != 1) {	/* for charger plug in/ out */
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
 			if (DISO_data.chr_get_diso_state) {
@@ -3236,6 +3259,10 @@ int bat_thread_kthread(void *x)
 		}
 
 	}
+
+	mutex_lock(&bat_mutex);
+	fg_bat_thread = KAL_TRUE;
+	mutex_unlock(&bat_mutex);
 
 	return 0;
 }
@@ -3264,6 +3291,8 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	int ret = 0;
 	int adc_in_data[2] = { 1, 1 };
 	int adc_out_data[2] = { 1, 1 };
+
+	mutex_lock(&bat_mutex);
 
 	switch (cmd) {
 	case TEST_ADC_CALI_PRINT:
@@ -3368,8 +3397,6 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 
 	case Set_Charger_Current:	/* For Factory Mode */
-		mutex_lock(&bat_mutex);
-
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(charging_level_data, user_data_addr, 4);
 		g_ftm_battery_flag = KAL_TRUE;
@@ -3408,8 +3435,6 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		else
 			charging_level_data[0] = CHARGE_CURRENT_450_00_MA;
 
-		mutex_unlock(&bat_mutex);
-
 		wake_up_bat();
 		battery_log(BAT_LOG_CRTI, "**** unlocked_ioctl : set_Charger_Current:%d\n",
 			    charging_level_data[0]);
@@ -3435,6 +3460,8 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		g_ADC_Cali = KAL_FALSE;
 		break;
 	}
+
+	mutex_unlock(&bat_mutex);
 
 	return 0;
 }
@@ -3487,9 +3514,9 @@ void check_battery_exist(void)
 
 			battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
 			#ifdef CONFIG_MTK_POWER_PATH_MANAGEMENT_SUPPORT
-			battery_charging_control(CHARGING_CMD_SET_PLATFORM_RESET, NULL);
+			orderly_reboot(true);
 			#else
-			battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
+			orderly_poweroff(true);
 			#endif
 		}
 	}
@@ -3552,7 +3579,7 @@ void charger_plug_out_sw_mode(void)
 /*extern unsigned int upmu_get_reg_value(unsigned int reg);*/
 void hv_sw_mode(void)
 {
-	kal_bool hv_status = KAL_FALSE;
+	kal_bool hv_status;
 	unsigned int charging_enable;
 
 	if (upmu_is_chr_det() == KAL_TRUE)
@@ -3618,6 +3645,9 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 		wait_event_interruptible(charger_hv_detect_waiter,
 					 (charger_hv_detect_flag == KAL_TRUE));
 
+		if (fg_battery_shutdown)
+			break;
+
 		if (BMT_status.charger_exist == KAL_TRUE) {
 			if (cnt >= 5) {
 				/* battery_log(BAT_LOG_CRTI, */
@@ -3638,9 +3668,14 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 		}
 
 		charger_hv_detect_flag = KAL_FALSE;
-		hrtimer_start(&charger_hv_detect_timer, ktime, HRTIMER_MODE_REL);
 
-	} while (!kthread_should_stop());
+		if (!fg_battery_shutdown)
+			hrtimer_start(&charger_hv_detect_timer,
+				ktime, HRTIMER_MODE_REL);
+
+	} while (!kthread_should_stop() && !fg_battery_shutdown);
+
+	fg_hv_thread = KAL_TRUE;
 
 	return 0;
 }
@@ -3670,6 +3705,9 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 		wait_event_interruptible(charger_hv_detect_waiter,
 					 (charger_hv_detect_flag == KAL_TRUE));
 
+		if (fg_battery_shutdown)
+			break;
+
 		if (upmu_is_chr_det() == KAL_TRUE)
 			check_battery_exist();
 
@@ -3693,9 +3731,13 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 		if (chargin_hw_init_done)
 			battery_charging_control(CHARGING_CMD_RESET_WATCH_DOG_TIMER, NULL);
 
-		hrtimer_start(&charger_hv_detect_timer, ktime, HRTIMER_MODE_REL);
+		if (!fg_battery_shutdown)
+			hrtimer_start(&charger_hv_detect_timer,
+				ktime, HRTIMER_MODE_REL);
 
-	} while (!kthread_should_stop());
+	} while (!kthread_should_stop() && !fg_battery_shutdown);
+
+	fg_hv_thread = KAL_TRUE;
 
 	return 0;
 }
@@ -4496,6 +4538,26 @@ static int battery_remove(struct platform_device *dev)
 
 static void battery_shutdown(struct platform_device *dev)
 {
+#if !defined(CONFIG_POWER_EXT)
+	int count = 0;
+
+	mutex_lock(&bat_mutex);
+	fg_battery_shutdown = KAL_TRUE;
+	wake_up_bat();
+	charger_hv_detect_flag = KAL_TRUE;
+	wake_up_interruptible(&charger_hv_detect_waiter);
+
+	while ((!fg_bat_thread || !fg_hv_thread) && count < 5) {
+		mutex_unlock(&bat_mutex);
+		msleep(20);
+		count++;
+		mutex_lock(&bat_mutex);
+	}
+
+	if (!fg_bat_thread || !fg_hv_thread)
+		battery_log(BAT_LOG_CRTI, "failed to terminate battery related thread(%d, %d)\n",
+			fg_bat_thread, fg_hv_thread);
+
 	if (mtk_pep_get_is_connect() || mtk_pep20_get_is_connect()) {
 		CHR_CURRENT_ENUM input_current = CHARGE_CURRENT_70_00_MA;
 
@@ -4504,6 +4566,9 @@ static void battery_shutdown(struct platform_device *dev)
 		battery_log(BAT_LOG_CRTI, "%s: reset TA before shutdown\n",
 			__func__);
 	}
+
+	mutex_unlock(&bat_mutex);
+#endif
 }
 
 /* ///////////////////////////////////////////////////////////////////////////////////////// */

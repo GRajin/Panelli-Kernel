@@ -62,9 +62,7 @@
 #define BATTERY_UNDER_VOL		(2)
 #define BATTERY_OVER_TEMP		(3)
 #define ADC_SAMPLE_TIMES        (5)
-#ifdef CONFIG_WIND_BATTERY_MODIFY
-#define charger_UNDER_VOL       (6)
-#endif
+
 /*****************************************************************************
  *  Pulse Charging State
  ****************************************************************************/
