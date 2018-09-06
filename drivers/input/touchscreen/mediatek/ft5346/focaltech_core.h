@@ -111,6 +111,7 @@
 #define TPD_KEYS                					{ KEY_MENU, KEY_HOMEPAGE, KEY_BACK}
 #define TPD_KEYS_DIM            					{{80,900,20,TPD_BUTTON_HEIGH}, {240,900,20,TPD_BUTTON_HEIGH}, {400,900,20,TPD_BUTTON_HEIGH}}
 #define FT_ESD_PROTECT  									0
+#define CTP_ESD_PROTECT							1 //tuwenzan@wind-mobi.com add at 20160602
 /*********************Custom Define end*************************************************/
 #define MT_PROTOCOL_B
 #define A_TYPE												0
@@ -145,6 +146,10 @@
 //#define TPD_RES_Y                					1280//800
 #define TPD_CALIBRATION_MATRIX  			{962,0,0,0,1600,0,0,0};
 #define FT_PROXIMITY_ENABLE				0
+//qiumeng@wind-mobi.com 20161212 begin
+#define TPD_PROXIMITY 1
+//qiumeng@wind-mobi.com 20161212 end
+//yinyapeng add for upgrade ==>
 //#define TPD_AUTO_UPGRADE
 //#define TPD_HAVE_CALIBRATION
 //#define TPD_HAVE_TREMBLE_ELIMINATION
@@ -280,6 +285,9 @@ struct fts_ts_data {
 #define SYSFS_DEBUG
 #define TPD_AUTO_UPGRADE  //open firmware upgrade --qiumeng@wind-mobi.com 20161209
 #define MTK_CTP_NODE                     1
+//qiumeng@wind-mobi.com 20160419 begin
+#define USB_CHARGE_DETECT		 1 
+//qiumeng@wind-mobi.com 20160419 end
 
 #ifdef TPD_AUTO_UPGRADE
 #define Boot_Upgrade_Protect

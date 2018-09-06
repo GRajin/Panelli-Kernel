@@ -329,7 +329,14 @@ config MTK_BIF_SUPPORT
 	  smart battery.
 	  Set No to disable BIF feature of a
 	  smart battery.
-	  
+
+config MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+    bool "MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT"
+    default n
+    help
+	  Set yes to support switch input output current.
+	  Set no to not support switch input output current.
+
 config WIND_BATTERY_MODIFY
 	bool "Define this macro for custom charging management"
 	default n
