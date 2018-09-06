@@ -1,4 +1,4 @@
-/*******add sar -------shenyong@wind-mobi.com --20161111---********/
+//tuwenzan@wind-mobi.com modify at 20161111 begin
 /*
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -10,12 +10,7 @@
 #include <linux/device.h>
 #include <linux/slab.h>
 #include <linux/interrupt.h>
-
-#if 0//def CONFIG_HAS_WAKELOCK
-#include <linux/wakelock.h>
-#include <linux/earlysuspend.h>
-#include <linux/suspend.h>
-#endif
+#include <linux/input.h> 
 
 /*
  *  I2C Registers
@@ -49,6 +44,8 @@
 #define SX9310_SAR_CTRL0_REG	0x2A
 #define SX9310_SAR_CTRL1_REG	0x2B
 #define SX9310_SAR_CTRL2_REG	0x2C
+
+#define SX9310_SAR_MODE_REG		0x41	//tuwenzan@wind-mobi.com add at 20170114 begin
 
 #define SX9310_SOFTRESET_REG  0x7F
 
@@ -88,11 +85,17 @@
 #define SX9310_TCHCMPSTAT_TCHSTAT1_FLAG   0x02
 #define SX9310_TCHCMPSTAT_TCHSTAT0_FLAG   0x01
 
+/* SAR GPIO */
+#define GPIO_SX9310_NIRQ   61    //twz 
+
 
 /*      SoftReset */
 #define SX9310_SOFTRESET  0xDE
 
-
+/**************************************
+*			define platform data
+*
+**************************************/
 struct smtc_reg_data {
   unsigned char reg;
   unsigned char val;
@@ -141,7 +144,7 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 	},
 	{
 		.reg = SX9310_CPS_CTRL3_REG,
-		.val = 0x0A,
+		.val = 0x0E,
 	},
 	{
 		.reg = SX9310_CPS_CTRL4_REG,
@@ -229,11 +232,11 @@ static struct smtc_reg_data sx9310_i2c_reg_setup[] = {
 
 static struct _buttonInfo psmtcButtons[] = {
   {
-    .keycode = KEY_BRL_DOT5,    //modify by shenyong@wind-mobi.com at 2016.12.20
+    .keycode = KEY_BRL_DOT5,    //modify by tuwenzan@wind-mobi.com at 2017.01.14
     .mask = SX9310_TCHCMPSTAT_TCHSTAT0_FLAG,
   },
   {
-    .keycode = KEY_BRL_DOT6,	//modify by shenyong@wind-mobi.com at 2016.12.20
+    .keycode = KEY_BRL_DOT6,	//modify by tuwenzan@wind-mobi.com at 2017.01.14
     .mask = SX9310_TCHCMPSTAT_TCHSTAT1_FLAG,
   },
   {
@@ -245,6 +248,7 @@ static struct _buttonInfo psmtcButtons[] = {
     .mask = SX9310_TCHCMPSTAT_TCHCOMB_FLAG,
   },
 };
+
 struct sx9310_platform_data {
   int i2c_reg_num;
   struct smtc_reg_data *pi2c_reg;
@@ -258,6 +262,34 @@ struct sx9310_platform_data {
 };
 typedef struct sx9310_platform_data sx9310_platform_data_t;
 typedef struct sx9310_platform_data *psx9310_platform_data_t;
+
+static int sx9310_get_nirq_state(void)
+{
+	return !gpio_get_value(GPIO_SX9310_NIRQ);
+}
+
+static struct _totalButtonInformation smtcButtonInformation = {
+  .buttons = psmtcButtons,
+  .buttonSize = ARRAY_SIZE(psmtcButtons),
+};
+
+
+static sx9310_platform_data_t sx9310_config = {
+  /* Function pointer to get the NIRQ state (1->NIRQ-low, 0->NIRQ-high) */
+  .get_is_nirq_low = sx9310_get_nirq_state,
+  /*  pointer to an initializer function. Here in case needed in the future */
+  //.init_platform_hw = sx9310_init_ts,
+  .init_platform_hw = NULL,
+  /*  pointer to an exit function. Here in case needed in the future */
+  //.exit_platform_hw = sx9310_exit_ts,
+  .exit_platform_hw = NULL,
+	
+  .pi2c_reg = sx9310_i2c_reg_setup,
+  .i2c_reg_num = ARRAY_SIZE(sx9310_i2c_reg_setup),
+
+  .pbuttonInformation = &smtcButtonInformation,
+};
+
 
 /***************************************
 *		define data struct/interrupt
@@ -307,15 +339,12 @@ struct sx93XX
 
   /* struct workqueue_struct	*ts_workq;  */  /* if want to use non default */
 	struct delayed_work dworker; /* work struct for worker function */
- 
-#if 0//def CONFIG_HAS_WAKELOCK
-  struct early_suspend early_suspend;  /* early suspend data  */
-#endif  
 };
 
 void sx93XX_suspend(psx93XX_t this);
 void sx93XX_resume(psx93XX_t this);
 int sx93XX_init(psx93XX_t this);
 int sx93XX_remove(psx93XX_t this);
-
 #endif
+//tuwenzan@wind-mobi.com modify at 20161111 end
+

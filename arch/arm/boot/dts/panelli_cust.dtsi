@@ -22,7 +22,6 @@
 	};
 };
 
-
 /* External Speaker */
 &pcm {
     extspkamp-gpio = <120 0>;
@@ -120,5 +119,16 @@
 	mediatek,kpd-hw-recovery-key = <1>;
 	mediatek,kpd-hw-factory-key = <0>;
 	status = "okay";
+};
+
+/* Sar Sensor */
+&i2c2 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	sar@28 {
+		compatible = "mediatek,sar";
+		reg = <0x28>;
+		status = "okay";
+	};
 };
 

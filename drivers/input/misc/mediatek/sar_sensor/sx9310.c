@@ -1,4 +1,4 @@
-/*******add sar -------shenyong@wind-mobi.com --20161111---********/
+//tuwenzan@wind-mobi.com modify at 20161111 begin
 /*! \file sx9310.c
  * \brief  SX9310 Driver
  *
@@ -13,26 +13,42 @@
 #define DRIVER_NAME "sx9310"
 
 #define MAX_WRITE_ARRAY_SIZE 32
+#include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/fs.h>
 #include <linux/slab.h>
+#include <linux/init.h>
+#include <linux/list.h>
 #include <linux/i2c.h>
+#include <linux/irq.h>
+#include <linux/jiffies.h>
+#include <linux/uaccess.h>
 #include <linux/delay.h>
-#include <linux/input.h>
-
-#include <linux/device.h>
 #include <linux/interrupt.h>
-#include <sx9310.h> /* main struct, interrupt,init,pointers */
+#include <linux/io.h>
+#include <linux/platform_device.h>
+#include <linux/gpio.h>
+#include <linux/miscdevice.h>
+#include <linux/spinlock.h>
+#include <linux/dma-mapping.h>
+#include <linux/interrupt.h>
+#include <linux/device.h>
+#include <linux/string.h> //tuwenzan@wind-mobi.com add at 20161121
+
+
+#ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_irq.h>
-#include <linux/gpio.h>
-#include <linux/platform_device.h>
-#include <mt-plat/mt_gpio.h>
+#include <linux/of_address.h>
+#endif
 
-#include <linux/string.h> //shenyong@wind-mobi.com add at 20161123
+/* main struct, interrupt,init,pointers */
+#include "sx9310.h" 
 
 #define IDLE 0
 #define ACTIVE 1
-
+#define USED 0
+static int flag_mode = 1;	//tuwenzan@wind-mobi.com add at 20170114 begin
 /*! \struct sx9310
  * Specialized struct containing input event data, platform data, and
  * last cap state read if needed.
@@ -42,11 +58,6 @@ typedef struct sx9310
   pbuttonInformation_t pbuttonInformation;
 	psx9310_platform_data_t hw; /* specific platform data settings */
 } sx9310_t, *psx9310_t;
-
-static unsigned int sar_irq;
-sx9310_platform_data_t sx9310_config;
-static unsigned int sar_gpio;
-
 
 static void ForcetoTouched(psx93XX_t this)
 {
@@ -69,6 +80,7 @@ static void ForcetoTouched(psx93XX_t this)
 	  dev_dbg(this->pdev, "Leaving ForcetoTouched()\n");
   }
 }
+
 
 /*! \fn static int write_register(psx93XX_t this, u8 address, u8 value)
  * \brief Sends a write register to the device
@@ -99,6 +111,7 @@ static int write_register(psx93XX_t this, u8 address, u8 value)
   return returnValue;
 }
 
+
 /*! \fn static int read_register(psx93XX_t this, u8 address, u8 *value) 
 * \brief Reads a register's value from the device
 * \param this Pointer to main parent struct 
@@ -113,7 +126,7 @@ static int read_register(psx93XX_t this, u8 address, u8 *value)
   if (this && value && this->bus) {
     i2c = this->bus;
     returnValue = i2c_smbus_read_byte_data(i2c,address);
-    dev_dbg(&i2c->dev, "read_register Address: 0x%x Return: 0x%x\n",address,returnValue);
+	  dev_dbg(&i2c->dev, "twz read_register Address: 0x%x Return: 0x%x\n",address,returnValue);
     if (returnValue >= 0) {
       *value = returnValue;
       return 0;
@@ -125,6 +138,8 @@ static int read_register(psx93XX_t this, u8 address, u8 *value)
   dev_info( this->pdev, "read_register-ForcetoTouched()\n");
   return -ENOMEM;
 }
+
+
 /*! \brief Sends a write register range to the device
  * \param this Pointer to main parent struct 
  * \param reg 8-bit register address (base address)
@@ -132,7 +147,7 @@ static int read_register(psx93XX_t this, u8 address, u8 *value)
  * \param size size of the data pointer
  * \return Value from i2c_master_send
  */
- #if 0
+#if USED
 static int write_registerEx(psx93XX_t this, unsigned char reg,
 				unsigned char *data, int size)
 {
@@ -158,10 +173,10 @@ static int write_registerEx(psx93XX_t this, unsigned char reg,
 	  	dev_err(this->pdev, "I2C write error\n");
   }
   dev_dbg(this->pdev, "leaving write_registerEx()\n");
-
-
 	return ret;
 }
+
+
 /*! \brief Reads a group of registers from the device
 * \param this Pointer to main parent struct 
 * \param reg 8-Bit address to read from (base address)
@@ -192,10 +207,11 @@ static int read_registerEx(psx93XX_t this, unsigned char reg,
   }
 	if (unlikely(ret < 0))
 		dev_err(this->pdev, "I2C read error\n");
-  dev_dbg(this->pdev, "leaving read_registerEx()\n");
+  	dev_dbg(this->pdev, "leaving read_registerEx()\n");
 	return ret;
 }
 #endif
+
 /*********************************************************************/
 /*! \brief Perform a manual offset calibration
 * \param this Pointer to main parent struct 
@@ -207,40 +223,23 @@ static int manual_offset_calibration(psx93XX_t this)
   returnValue = write_register(this,SX9310_IRQSTAT_REG,0xFF);
   return returnValue;
 }
+
+
 /*! \brief sysfs show function for manual calibration which currently just
  * returns register value.
  */
 static ssize_t manual_offset_calibration_show(struct device *dev,
 				     struct device_attribute *attr, char *buf)
 {
-  u8 reg_value = 0;
+ 	u8 reg_value = 0;
 	psx93XX_t this = dev_get_drvdata(dev);
 
-  read_register(this,SX9310_IRQSTAT_REG,&reg_value);
-  dev_err(this->pdev, "Reading IRQSTAT_REG  value==%d\n",reg_value);
-  return sprintf(buf, "%d\n", reg_value);
+  	dev_dbg(this->pdev, "Reading IRQSTAT_REG\n");
+  	read_register(this,SX9310_IRQSTAT_REG,&reg_value);
+//  	printk("twz reg_calue = 0x%x\n",reg_value);
+	return snprintf(buf, 2,"0x%x\n", reg_value);  //sprintf(buf, "0x%x\n", reg_value);
 }
-
-/*! \brief sysfs store function for manual calibration
- */
-static ssize_t manual_offset_calibration_store(struct device *dev,
-				     struct device_attribute *attr,
-				     const char *buf, size_t count)
-{
-	psx93XX_t this = dev_get_drvdata(dev);
-	unsigned long val =0;
-	if (kstrtoul(buf, 0, &val))
-		return -EINVAL;
-  if (val) {
-    dev_info( this->pdev, "Performing manual_offset_calibration()\n");
-    manual_offset_calibration(this);
-  }
-	return count;
-}
-
-//shenyong@wind-mobi.com add at 20161123 begin
-
-
+//tuwenzan@wind-mobi.com add at 20170114 begin
 static ssize_t all_register_value_show(struct device *dev,
 					struct device_attribute *attr, char *buf)
 {
@@ -256,15 +255,14 @@ static ssize_t all_register_value_show(struct device *dev,
 					 0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x3A,0x40,
 					 0x41,0x42,0x7F};
 	psx93XX_t this = dev_get_drvdata(dev);
-	printk("twz enter all_register_value_show\n");
+	//printk("twz enter all_register_value_show\n");
 	cache_buf = (char *)kmalloc(1024,GFP_KERNEL);
 	memset(cache_buf,0,1024);
 	single_buf = (char *)kmalloc(20,GFP_KERNEL);
 	memset(single_buf,0,20);
-	
   	if (this && (pDevice = this->pDevice) && (pdata = pDevice->hw))
   	{
-   	   while ( i < sizeof(reg_addr)/sizeof(reg_addr[0])) {
+   	   while ( i < ARRAY_SIZE(reg_addr)) {
       	/* read all registers/values contained in i2c_reg */    
       read_register(this, reg_addr[i],&reg_value);
 	  sprintf(single_buf,"REG[0x%x] = 0x%x\n",reg_addr[i],reg_value);
@@ -277,6 +275,32 @@ static ssize_t all_register_value_show(struct device *dev,
  	return sprintf(buf,"As follow is SX9301 all init reg list:\n%s\n",cache_buf);
 }
 
+static ssize_t sar_enable_show(struct device *dev,
+					struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf,"%d\n",flag_mode);
+}
+
+//tuwenzan@wind-mobi.com add at 20170114 end
+
+
+/*! \brief sysfs store function for manual calibration
+ */
+static ssize_t manual_offset_calibration_store(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+	unsigned long val;
+	psx93XX_t this = dev_get_drvdata(dev);
+	if (kstrtoul(buf, 0, &val))  // twz  strict_strtoul kstrtoul
+		return -EINVAL;
+  if (val) {
+    dev_info( this->pdev, "Performing manual_offset_calibration()\n");
+    manual_offset_calibration(this);
+  }
+	return count;
+}
+//tuwenzan@wind-mobi.com add at 20170114 begin
 static ssize_t operation_single_store(struct device *dev,
 					struct device_attribute *attr,const char *buf, size_t count)
 {
@@ -285,7 +309,7 @@ static ssize_t operation_single_store(struct device *dev,
 	u8 reg = 0;
 	u8 reg_value = 0;
 	psx93XX_t this = dev_get_drvdata(dev);
-	printk("twz enter operation_single_strore\n");
+	//printk("twz enter operation_single_strore\n");
 	second_buf = strpbrk(buf,tab) + 1;
 	reg = simple_strtoul(buf,0,16);
 	reg_value = simple_strtoul(second_buf,0,16);
@@ -294,25 +318,47 @@ static ssize_t operation_single_store(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(all_register_value,0644,all_register_value_show,NULL);
-static DEVICE_ATTR(operation_single_reg,0644,NULL,operation_single_store);
+static ssize_t sar_enable_store(struct device *dev,
+					struct device_attribute *attr,const char *buf, size_t count)
+{
+	u8 enable = 1;
+	u8 disable = 0;
+	psx93XX_t this = dev_get_drvdata(dev);
+	if(strncmp(buf,"1",1) == 0){
+		printk("tuwenzan sar you echo 1\n");
+		write_register(this,SX9310_SAR_MODE_REG,enable);
+		enable_irq(this->irq);
+		flag_mode = 1;
+		return count;
+	}
+	if(strncmp(buf,"0",1) == 0){
+		printk("tuwenzan sar you echo 0\n");
+		write_register(this,SX9310_SAR_MODE_REG,disable);
+		disable_irq(this->irq);
+		flag_mode = 0;
+		return count;
+	}
+	return count;
+}
+
 static DEVICE_ATTR(calibrate, 0644, manual_offset_calibration_show,
                                 manual_offset_calibration_store);
-								
+static DEVICE_ATTR(all_register_value,0644,all_register_value_show,NULL);
+static DEVICE_ATTR(operation_single_reg,0644,NULL,operation_single_store);
+static DEVICE_ATTR(sar_enable,0644,sar_enable_show,sar_enable_store);
+
+
 static struct attribute *sx9310_attributes[] = {
 	&dev_attr_calibrate.attr,
 	&dev_attr_all_register_value.attr,
 	&dev_attr_operation_single_reg.attr,
+	&dev_attr_sar_enable.attr,
 	NULL,
 };
+//tuwenzan@wind-mobi.com add at 20170114 end
 static struct attribute_group sx9310_attr_group = {
 	.attrs = sx9310_attributes,
 };
-//shenyong@wind-mobi.com add at 20161123 end
-/*********************************************************************/
-
-
-
 
 
 /*! \fn static int read_regStat(psx93XX_t this)
@@ -332,6 +378,7 @@ static int read_regStat(psx93XX_t this)
   }
   return 0;
 }
+
 
 /*! \brief  Initialize I2C config from platform data
  * \param this Pointer to main parent struct 
@@ -401,6 +448,8 @@ static int initialize(psx93XX_t this)
   return -ENOMEM;
 }
 
+
+
 /*! 
  * \brief Handle what to do when a touch occurs
  * \param this Pointer to main parent struct 
@@ -419,7 +468,7 @@ static void touchProcess(psx93XX_t this)
 
   if (this && (pDevice = this->pDevice))
   {
-    dev_dbg(this->pdev, "Inside touchProcess()\n");
+    dev_dbg(this->pdev, "9310 Inside touchProcess()\n");
     read_register(this, SX9310_STAT0_REG, &i);
 
     buttons = pDevice->pbuttonInformation->buttons;
@@ -444,11 +493,11 @@ static void touchProcess(psx93XX_t this)
             /* User pressed button */
             dev_info(this->pdev, "cap button %d touched\n", counter);
             input_report_key(input, pCurrentButton->keycode, 1);
-/******add by shenyong@wind-mobi.cm----20161220----start************/			
+/******add by tuwenzan@wind-mobi.cm----20170114----start************/			
 			input_sync(input);
 			input_report_key(input, pCurrentButton->keycode, 0);
 			input_sync(input);
-/******add by shenyong@wind-mobi.cm----20161220----end************/			
+/******add by tuwenzan@wind-mobi.cm----20170114----end************/			
             pCurrentButton->state = ACTIVE;
           } else {
             dev_dbg(this->pdev, "Button %d already released.\n",counter);
@@ -458,13 +507,13 @@ static void touchProcess(psx93XX_t this)
           if (((i & pCurrentButton->mask) != pCurrentButton->mask)) {
             /* User released button */
             dev_info(this->pdev, "cap button %d released\n",counter);
-/******add by shenyong@wind-mobi.cm----20161220----start************/			
+/******add by tuwenzan@wind-mobi.cm----20170114----start************/			
 			input_report_key(input, KEY_BRL_DOT6, 1);
 			input_sync(input);
             input_report_key(input, KEY_BRL_DOT6, 0);
 			input_sync(input);
 			//input_report_key(input, pCurrentButton->keycode, 0);
-/******add by shenyong@wind-mobi.cm----20161220----end************/			
+/******add by tuwenzan@wind-mobi.cm----20170114----end************/			
             pCurrentButton->state = IDLE;
           } else {
             dev_dbg(this->pdev, "Button %d still touched.\n",counter);
@@ -474,51 +523,43 @@ static void touchProcess(psx93XX_t this)
           break;
       };
     }
-/******add by shenyong@wind-mobi.cm----20161220----start************/		
+/******add by tuwenzan@wind-mobi.cm----20170114----start************/		
 //    input_sync(input);
-/******add by shenyong@wind-mobi.cm----20161220----end************/	
+/******add by tuwenzan@wind-mobi.cm----20170114----end************/	
 	  dev_dbg(this->pdev, "Leaving touchProcess()\n");
   }
 }
+
+
 /*! \fn static int sx9310_probe(struct i2c_client *client, const struct i2c_device_id *id)
  * \brief Probe function
  * \param client pointer to i2c_client
  * \param id pointer to i2c_device_id
  * \return Whether probe was successful
  */
-
-
-
 static int sx9310_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	int i = 0;
-	psx93XX_t this = 0;
-	psx9310_t pDevice = 0;
-	  psx9310_platform_data_t pplatData = 0;
-	struct input_dev *input = NULL;
-	int err = 0;
-		
-	  dev_info(&client->dev, "sx9310_probe()\n");
-		  if (!i2c_check_functionality(client->adapter,
-					   I2C_FUNC_SMBUS_READ_WORD_DATA))
-		  return -EIO;
-
-	pplatData = kzalloc(sizeof(*pplatData), GFP_KERNEL);
-	if (pplatData == NULL) {
-		dev_info(&client->dev,
-			"failed to allocate memory for module data. Abort.\n");
-		return -ENOMEM;
+ 	int i = 0;
+	int retval = 0;
+ 	psx93XX_t this = 0;
+ 	psx9310_t pDevice = 0;
+	psx9310_platform_data_t pplatData = 0;
+ 	struct input_dev *input = NULL;
+	printk("twz enter sx9310 probe client addr = %x\n",client->addr);
+	dev_info(&client->dev, "sx9310_probe()\n");
+ 	//pplatData = client->dev.platform_data;
+ 	pplatData = &sx9310_config;
+	if (!pplatData) {
+		dev_err(&client->dev, "platform data is required!\n");
+		return -EINVAL;
 	}
-		  
-	pplatData = &sx9310_config;
-	  if (!pplatData) {
-		  dev_err(&client->dev, "platform data is required!\n");
-		  return -EINVAL;
-	  }
-	
-	this = kzalloc(sizeof(sx93XX_t), GFP_KERNEL); /* create memory for main struct */
-	dev_dbg(&client->dev, "\t Initialized Main Memory: 0x%p\n",this);
 
+	if (!i2c_check_functionality(client->adapter,
+				     I2C_FUNC_SMBUS_READ_WORD_DATA))
+		return -EIO;
+
+  	this = kzalloc(sizeof(sx93XX_t), GFP_KERNEL); /* create memory for main struct */
+	dev_dbg(&client->dev, "\t Initialized Main Memory: 0x%p\n",this);
   
   if (this)
   {
@@ -531,10 +572,9 @@ static int sx9310_probe(struct i2c_client *client, const struct i2c_device_id *i
      * (1->NIRQ=0, 0->NIRQ=1) */
     this->get_nirq_low = pplatData->get_is_nirq_low;
     /* save irq in case we need to reference it */
-    this->irq = sar_irq;
+    this->irq = client->irq;
     /* do we need to create an irq timer after interrupt ? */
     this->useIrqTimer = 0;
-
     /* Setup function to call on corresponding reg irq source bit */
     if (MAX_NUM_STATUS_BITS>= 8)
     {
@@ -562,12 +602,14 @@ static int sx9310_probe(struct i2c_client *client, const struct i2c_device_id *i
     if (pDevice)
     {
       /* for accessing items in user data (e.g. calibrate) */
-      err = sysfs_create_group(&client->dev.kobj, &sx9310_attr_group);
-	if (err < 0)
-		printk("sysfs fail /n");
+      retval = sysfs_create_group(&client->dev.kobj, &sx9310_attr_group);
+	if (retval < 0) {
+		printk("twz fail to creat sysfs file\n");
+		return 0;
+	}
 
-      /* Check if we hava a platform initialization function to call*/
-      if (pplatData->init_platform_hw)
+     /* Check if we hava a platform initialization function to call*/
+     if (pplatData->init_platform_hw)
         pplatData->init_platform_hw();
 
       /* Add Pointer to main platform data struct */
@@ -596,11 +638,13 @@ static int sx9310_probe(struct i2c_client *client, const struct i2c_device_id *i
       if(input_register_device(input))
         return -ENOMEM;
     }
+	client->dev.driver_data = this;  //tuwenzan@wind-mobi.com add this at 20161112
     sx93XX_init(this);
     return  0;
   }
   return -1;
 }
+
 
 /*! \fn static int sx9310_remove(struct i2c_client *client)
  * \brief Called when device is to be removed
@@ -617,7 +661,8 @@ static int sx9310_remove(struct i2c_client *client)
     input_unregister_device(pDevice->pbuttonInformation->input);
 
     sysfs_remove_group(&client->dev.kobj, &sx9310_attr_group);
-    pplatData = client->dev.platform_data;
+    //pplatData = client->dev.platform_data;
+    pplatData = &sx9310_config;
     if (pplatData && pplatData->exit_platform_hw)
       pplatData->exit_platform_hw();
     kfree(this->pDevice);
@@ -626,76 +671,14 @@ static int sx9310_remove(struct i2c_client *client)
 }
 
 
-static int mt_sar_gpio_init(void)
-{
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,sarsensor");
-	if (node) {
-		of_property_read_u32_array(node, "gpio-irq",
-					   &sar_gpio, 1);
-		printk("shen irq is %d",sar_gpio);
-	} else {
-		pr_debug("%s : get gpio num err.\n", __func__);
-		return -1;
-	}
-
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,sarsensor");
-	if (node) {
-
-		sar_irq = irq_of_parse_and_map(node, 0);
-		printk("shen sar_irq is %d",sar_irq);
-	} else {
-		pr_debug("%s : get gpio num err.\n", __func__);
-		return -1;
-	}	
-
-	return 0;
-}
-
-static int sx9310_get_nirq_state(void)
-{
-	return !gpio_get_value(sar_gpio);
-}
-
-static struct _totalButtonInformation smtcButtonInformation = {
-  .buttons = psmtcButtons,
-  .buttonSize = ARRAY_SIZE(psmtcButtons),
-};
-
-static int mt_sar_probe(struct platform_device *pdev)
-{
-	if (mt_sar_gpio_init() != 0)
-		printk("shen %s : mt_sar_gpio_init err.\n", __func__);
-	
-	sx9310_config.init_platform_hw = NULL;
-	sx9310_config.exit_platform_hw = NULL;
-	sx9310_config.pi2c_reg = sx9310_i2c_reg_setup;
-	sx9310_config.i2c_reg_num = ARRAY_SIZE(sx9310_i2c_reg_setup);
-	sx9310_config.pbuttonInformation = &smtcButtonInformation;
-	sx9310_config.get_is_nirq_low = sx9310_get_nirq_state;
-
-	return 0;
-}
-
-static int mt_sar_remove(struct platform_device *pdev)
-{
-	return 0;
-}
-
-
-
-/*====================================================*/
 /***** Kernel Suspend *****/
-#if defined(USE_KERNEL_SUSPEND)
-
-static int sx9310_suspend(struct i2c_client *client)
+static int sx9310_suspend(struct i2c_client *client,pm_message_t mesg)
 {
   psx93XX_t this = i2c_get_clientdata(client);
   sx93XX_suspend(this);
  return 0;
 }
+
 /***** Kernel Resume *****/
 static int sx9310_resume(struct i2c_client *client)
 {
@@ -703,8 +686,42 @@ static int sx9310_resume(struct i2c_client *client)
   sx93XX_resume(this);
   return 0;
 }
-#endif 
-/*====================================================*/
+
+
+
+static struct i2c_device_id sx9310_idtable[] = {
+	{ DRIVER_NAME, 0 },
+	{ }
+};
+
+#ifdef CONFIG_OF
+static const struct of_device_id sar_of_match[] = {
+{.compatible = "mediatek,sar"},
+	{},
+};
+
+struct of_device_id sar_eint_of_match[] = {
+	{ .compatible =  "mediatek, sar-eint", },
+	{},
+};
+#endif
+
+MODULE_DEVICE_TABLE(i2c, sx9310_idtable);
+
+static struct i2c_driver sx9310_driver = {
+	.driver = {
+		   .name = DRIVER_NAME,
+		   .owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		   .of_match_table = sar_of_match,
+#endif
+		   },
+	.id_table = sx9310_idtable,
+	.probe	  = sx9310_probe,
+	.remove   = sx9310_remove,
+    .suspend  = sx9310_suspend,
+    .resume   = sx9310_resume,
+};
 
 
 #ifdef USE_THREADED_IRQ
@@ -756,6 +773,8 @@ static void sx93XX_worker_func(struct work_struct *work)
     printk(KERN_ERR "sx93XX_worker_func, NULL work_struct\n");
   }
 }
+
+
 static irqreturn_t sx93XX_interrupt_thread(int irq, void *data)
 {
   psx93XX_t this = 0;
@@ -845,17 +864,30 @@ static void sx93XX_worker_func(struct work_struct *work)
 }
 #endif
 
-
-
-
-void sx93XX_suspend(psx93XX_t this)
-{
-  if (this)
-    disable_irq(this->irq);
-}
-void sx93XX_resume(psx93XX_t this)
+int sx93XX_remove(psx93XX_t this)
 {
   if (this) {
+    cancel_delayed_work_sync(&this->dworker); /* Cancel the Worker Func */
+    /*destroy_workqueue(this->workq); */
+    free_irq(this->irq, this);
+    kfree(this);
+    return 0;
+  }
+  return -ENOMEM;
+}
+
+//tuwenzan@wind-mobi.com modify at 20170114 begin
+void sx93XX_suspend(psx93XX_t this)
+{
+  if (this){
+  	write_register(this,SX9310_SAR_MODE_REG,0);
+    disable_irq(this->irq);
+ }
+}
+
+void sx93XX_resume(psx93XX_t this)
+{
+  if (this && flag_mode) {
 #ifdef USE_THREADED_IRQ
   mutex_lock(&this->mutex);
   /* Just in case need to reset any uncaught interrupts */
@@ -869,44 +901,25 @@ void sx93XX_resume(psx93XX_t this)
     enable_irq(this->irq);
   }
 }
+//tuwenzan@wind-mobi.com modify at 20170114 end
 
-#if 0//def CONFIG_HAS_WAKELOCK
-/*TODO: Should actually call the device specific suspend/resume
- * As long as the kernel suspend/resume is setup, the device
- * specific ones will be called anyways
- */
-extern suspend_state_t get_suspend_state(void);
-void sx93XX_early_suspend(struct early_suspend *h)
-{
-	psx93XX_t this = 0;
-  dev_dbg(this->pdev, "inside sx93XX_early_suspend()\n");
-	this = container_of(h, sx93XX_t, early_suspend);
-  sx93XX_suspend(this);
-  dev_dbg(this->pdev, "exit sx93XX_early_suspend()\n");
-}
-
-void sx93XX_late_resume(struct early_suspend *h)
-{
-	psx93XX_t this = 0;
-  dev_dbg(this->pdev, "inside sx93XX_late_resume()\n");
-	this = container_of(h, sx93XX_t, early_suspend);
-  sx93XX_resume(this);
-  dev_dbg(this->pdev, "exit sx93XX_late_resume()\n");
-}
-#endif
 
 int sx93XX_init(psx93XX_t this)
 {
 	int err = 0;
-  if (this && this->pDevice)
-  {
+	struct device_node *node = NULL;
+	u32 ints[2] = { 0, 0 };
+	
+	node = of_find_matching_node(node, sar_eint_of_match);
+//	printk("twz enter sx93XX_init\n");
+	if (node && this && this->pDevice) {
 
+		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
+		gpio_set_debounce(ints[0], ints[1]);
+		this->irq = irq_of_parse_and_map(node, 0);
 #ifdef USE_THREADED_IRQ
-
     /* initialize worker function */
 	  INIT_DELAYED_WORK(&this->dworker, sx93XX_worker_func);
-
-
     /* initialize mutex */
     mutex_init(&this->mutex);
     /* initailize interrupt reporting */
@@ -917,10 +930,8 @@ int sx93XX_init(psx93XX_t this)
 #else
     /* initialize spin lock */
   	spin_lock_init(&this->lock);
-
     /* initialize worker function */
 	  INIT_DELAYED_WORK(&this->dworker, sx93XX_worker_func);
-
     /* initailize interrupt reporting */
     this->irq_disabled = 0;
 	  err = request_irq(this->irq, sx93XX_irq, IRQF_TRIGGER_FALLING,
@@ -930,90 +941,16 @@ int sx93XX_init(psx93XX_t this)
 		  dev_err(this->pdev, "irq %d busy?\n", this->irq);
 		  return err;
     }
-#ifdef USE_THREADED_IRQ
-    dev_info(this->pdev, "registered with threaded irq (%d)\n", this->irq);
-#else
-    dev_info(this->pdev, "registered with irq (%d)\n", this->irq);
-#endif
-#if 0//def CONFIG_HAS_WAKELOCK	
-    this->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
-    this->early_suspend.suspend = sx93XX_early_suspend;
-    this->early_suspend.resume = sx93XX_late_resume;
-    register_early_suspend(&this->early_suspend);
-    if (has_wake_lock(WAKE_LOCK_SUSPEND) == 0 && 
-                            get_suspend_state() == PM_SUSPEND_ON)
-     	sx93XX_early_suspend(&this->early_suspend);
-#endif //CONFIG_HAS_WAKELOCK
     /* call init function pointer (this should initialize all registers */
     if (this->init)
       return this->init(this);
     dev_err(this->pdev,"No init function!!!!\n");
-	}
+	} 
 	return -ENOMEM;
 }
 
-int sx93XX_remove(psx93XX_t this)
-{
-  if (this) {
-    cancel_delayed_work_sync(&this->dworker); /* Cancel the Worker Func */
-    /*destroy_workqueue(this->workq); */
-#if 0//def CONFIG_HAS_WAKELOCK
-    unregister_early_suspend(&this->early_suspend);
-#endif
-    free_irq(this->irq, this);
-    kfree(this);
-    return 0;
-  }
-  return -ENOMEM;
-}
-
-
-static struct i2c_device_id sx9310_idtable[] = {
-	{ DRIVER_NAME, 0 },
-	{ }
-};
-static const struct of_device_id  sx9310_of_match[] = {
-	{.compatible = "mediatek,sar"},
-	{},
-};
-
-
-static const struct of_device_id sar_dev_of_match[] = {
-{.compatible = "mediatek,sarsensor",},
-	{},
-};
-
-static struct platform_driver mtk_sar_platform_driver = {
-	.probe = mt_sar_probe,
-	.remove = mt_sar_remove,
-	.driver = {
-		   .name = DRIVER_NAME,
-		   .owner = THIS_MODULE,
-#ifdef CONFIG_OF
-		   .of_match_table = sar_dev_of_match,
-#endif
-		   },
-};
-
-
-MODULE_DEVICE_TABLE(i2c, sx9310_idtable);
-static struct i2c_driver sx9310_driver = {
-	.driver = {
-		.owner  = THIS_MODULE,
-		.name   = DRIVER_NAME,
-		.of_match_table = sx9310_of_match,
-	},
-	.id_table = sx9310_idtable,
-	.probe	  = sx9310_probe,
-	.remove	  =sx9310_remove,
-#if defined(USE_KERNEL_SUSPEND)
-       .suspend  = sx9310_suspend,
-       .resume   = sx9310_resume,
-#endif
-};
 static int __init sx9310_init(void)
 {
-	platform_driver_register(&mtk_sar_platform_driver);
 	return i2c_add_driver(&sx9310_driver);
 }
 static void __exit sx9310_exit(void)
@@ -1024,9 +961,8 @@ static void __exit sx9310_exit(void)
 module_init(sx9310_init);
 module_exit(sx9310_exit);
 
-MODULE_AUTHOR("Semtech Corp. (http://www.semtech.com/)");
+MODULE_AUTHOR("tuwenzan@wind-mobi.com");
 MODULE_DESCRIPTION("SX9310 Capacitive Touch Controller Driver");
 MODULE_LICENSE("GPL");
-MODULE_VERSION("0.1");
-
+//tuwenzan@wind-mobi.com modify at 20161111 end
 
