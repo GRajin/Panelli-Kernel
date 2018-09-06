@@ -1,7 +1,7 @@
 64-bit kernel tree for moto c plus codenamed panelli
 
 ## Kernel source changed
-Kernel source is now mostly baseed on nicklaus branch of official moto source code.
+Kernel source is now mostly based on nicklaus branch (https://github.com/MotorolaMobilityLLC/kernel-mtk/tree/nougat-7.1.1-release-nicklaus) of official moto source code.
 
 I did a rebase but there were several errors since nicklaus had more features than panelli.
 
