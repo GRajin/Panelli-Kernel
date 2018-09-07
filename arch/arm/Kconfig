@@ -655,7 +655,9 @@ config ARCH_PXA
 config ARCH_MEDIATEK
 	bool "Mediatek MT67xx SoC"
 	select ARCH_HAS_CPUFREQ
+	select ARCH_SELECT_MEMORY_MODEL
 	select ARM_AMBA
+	select ARM_CPU_TOPOLOGY
 	select ARM_HAS_SG_CHAIN
 	select MTK_TIMER
 	select CPU_IDLE
@@ -671,6 +673,7 @@ config ARCH_MEDIATEK
 	select MTK_SYS_CIRQ
 	select NEED_MACH_MEMORY_H
 	select PINCTRL
+	select SCHED_MC
 	help
 	  Support for Mediatek MT67xx SoCs
 
