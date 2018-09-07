@@ -185,6 +185,14 @@
 		flashlights: flashlights@ {
 			compatible = "mediatek,camera_flashlights";
 		};
+
+		sim1_hot_plug: sim1_hot_plug {
+			compatible = "mediatek,sim1_hot_plug";
+		};
+
+		sim2_hot_plug: sim2_hot_plug {
+			compatible = "mediatek,sim2_hot_plug";
+		};
 };
 /* sensor gpio standization */
 &pio {

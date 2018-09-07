@@ -121,6 +121,32 @@
 	status = "okay";
 };
 
+/* NFC default reg override */
+&i2c2 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	nfc@25 {
+		compatible = "mediatek,nfc";
+		reg = <0x25>;
+		status = "okay";
+	};
+};
+
+&nfc {
+	interrupt-parent = <&eintc>;
+	interrupts = <26 IRQ_TYPE_LEVEL_HIGH>;
+	debounce = <26 0>;
+	status = "okay";
+};
+
+/* RIL */
+&swtp {
+	interrupt-parent = <&eintc>;
+	interrupts = <88 IRQ_TYPE_LEVEL_HIGH>;
+	debounce = <88 1000000>;
+	status = "okay";
+};
+
 /* Sar Sensor */
 &i2c2 {
 	#address-cells = <1>;
@@ -132,3 +158,18 @@
 	};
 };
 
+&sar {
+	interrupt-parent = <&eintc>;
+	interrupts = <2 IRQ_TYPE_EDGE_FALLING>;
+	debounce = <2 0>;
+	status = "okay";
+};
+
+/* Sim */
+&sim1_hot_plug {
+	status = "okay";
+};
+
+&sim2_hot_plug {
+	status = "okay";
+};

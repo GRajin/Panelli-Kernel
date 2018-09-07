@@ -40,13 +40,13 @@ config ARCH_MT6735M
 
 config ARCH_MT6753
 	bool "MediaTek MT6753"
-	select ARCH_REQUIRE_GPIOLIB
-	select ARM_ERRATA_836870
+  select ARCH_REQUIRE_GPIOLIB
+  select ARM_ERRATA_836870
   select ARM_GIC
-	select ARM_MT6735_CPUIDLE
-	select CRYPTO_AES_ARM32_CE
-	select CRYPTO_SHA2_ARM_CE
-	select KERNEL_MODE_NEON
+  select ARM_MT6735_CPUIDLE
+  select CRYPTO_AES_ARM32_CE
+  select CRYPTO_SHA2_ARM_CE
+  select KERNEL_MODE_NEON
   select MTK_EIC
   select MTK_GIC
   select MTK_POWER_GS

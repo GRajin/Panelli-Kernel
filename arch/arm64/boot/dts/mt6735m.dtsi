@@ -656,7 +656,9 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 		als: als {
 			compatible = "mediatek, als-eint";
 		};
-
+		sar: sar {
+			compatible = "mediatek, sar-eint";
+		};
 		gse_1: gse_1 {
 			compatible = "mediatek, gse_1-eint";
 			status = "disabled";
