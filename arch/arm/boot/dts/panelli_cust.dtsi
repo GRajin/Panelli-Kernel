@@ -23,7 +23,7 @@
 };
 
 /* External Speaker */
-&pcm {
+&audgpio {
     extspkamp-gpio = <120 0>;
 };
 

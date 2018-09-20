@@ -666,7 +666,7 @@ static unsigned int lcm_ata_check(unsigned char *buf)
 	#ifdef CONFIG_WIND_DEVICE_INFO
 	if(!strcmp(g_lcm_name,"ili9881_hd720_dsi_vdo_dj")){
 		return 1;
-	}else
+	}
 	#endif
 		return -1;
 }
