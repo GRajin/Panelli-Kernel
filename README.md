@@ -9,14 +9,8 @@ So I took the long way, i.e. manually copy paste, edit & remove unwanted stuffs 
 
 Now kernel is fine and we can say goodbye to the horrible panelli source.
 
-## ARM status
-Working
-
-## ARM64 status
-Under Testing/Development
-
 ## Bugs
-None in 32bit
+None
 
 ## Building
 Please build using `panelli_defconfig`
