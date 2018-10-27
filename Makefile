@@ -406,13 +406,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -march=armv7-a -mfpu=neon \
 		   -mfloat-abi=softfp -mtune=cortex-a53
 
-# For 64bit
-# -march=armv8-a -mcpu=cortex-a53
-
-# For 32bit
-# 		   -march=armv7-a -mfpu=neon \
-# 		   -mfloat-abi=softfp -mtune=cortex-a53
-
 # Enable if compiling kernel only
 # Pipe makes the compilation process faster (Disable if GCC crashes)
 # KBUILD_CFLAGS	+= -pipe
