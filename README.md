@@ -14,5 +14,3 @@ None
 
 ## Building
 Please build using `panelli_defconfig`
-
-If you're building for 64bit then please edit make file to remove arm tuning flags & add arm64 flags.
