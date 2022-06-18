@@ -3,10 +3,10 @@
 
 import sys, os
 import re
-import ConfigParser
+import configparser
 import xml.dom.minidom
 
-from ModuleObj import ModuleObj
+from .ModuleObj import ModuleObj
 from data.PmicData import PmicData
 
 from utility.util import log
