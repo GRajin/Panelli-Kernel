@@ -5,7 +5,7 @@ import re
 import os
 import string
 
-import ConfigParser
+import configparser
 import xml.dom.minidom
 
 from data.EintData import EintData
