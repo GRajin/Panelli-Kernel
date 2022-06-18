@@ -1,5 +1,6 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
+from __future__ import print_function
 import os, sys
 import getopt
 import traceback
@@ -19,7 +20,7 @@ from utility.util import LogLevel
 from utility.util import log
 
 def usage():
-    print '''
+    print('''
 usage: DrvGen [dws_path] [file_path] [log_path] [paras]...
 
 options and arguments:
@@ -28,7 +29,7 @@ dws_path    :    dws file path
 file_path   :    where you want to put generated files
 log_path    :    where to store the log files
 paras        :    parameter for generate wanted file
-'''
+''')
 
 def is_oldDws(path, gen_spec):
     if not os.path.exists(path):
@@ -37,7 +38,7 @@ def is_oldDws(path, gen_spec):
 
     try:
         root = xml.dom.minidom.parse(dws_path)
-    except Exception, e:
+    except Exception as e:
         log(LogLevel.warn, '%s is not xml format, try to use old DCT!' %(dws_path))
         if len(gen_spec) == 0:
             log(LogLevel.warn, 'Please use old DCT UI to gen all files!')
@@ -135,7 +136,6 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     sys.exit(0)
-
 
 
 
