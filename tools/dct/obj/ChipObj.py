@@ -4,19 +4,19 @@
 import os, sys
 import xml.dom.minidom
 
-from GpioObj import GpioObj
-from EintObj import EintObj
-from AdcObj import AdcObj
-from ClkObj import ClkObj
-from ClkObj import ClkObj_Everest
-from ClkObj import ClkObj_Olympus
-from ClkObj import ClkObj_Rushmore
-from I2cObj import I2cObj
-from PmicObj import PmicObj
-from Md1EintObj import Md1EintObj
-from PowerObj import PowerObj
-from KpdObj import KpdObj
-from ModuleObj import ModuleObj
+from .GpioObj import GpioObj
+from .EintObj import EintObj
+from .AdcObj import AdcObj
+from .ClkObj import ClkObj
+from .ClkObj import ClkObj_Everest
+from .ClkObj import ClkObj_Olympus
+from .ClkObj import ClkObj_Rushmore
+from .I2cObj import I2cObj
+from .PmicObj import PmicObj
+from .Md1EintObj import Md1EintObj
+from .PowerObj import PowerObj
+from .KpdObj import KpdObj
+from .ModuleObj import ModuleObj
 
 from utility.util import log
 from utility.util import LogLevel
