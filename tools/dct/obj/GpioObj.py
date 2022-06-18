@@ -5,7 +5,7 @@ import re
 import os
 import sys
 import string
-import ConfigParser
+import configparser
 import xml.dom.minidom
 
 
