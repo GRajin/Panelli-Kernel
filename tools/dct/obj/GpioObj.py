@@ -12,7 +12,7 @@ import xml.dom.minidom
 from data.GpioData import GpioData
 from data.EintData import EintData
 from .ModuleObj import ModuleObj
-import ChipObj
+from . import ChipObj
 from utility.util import compare
 from utility.util import sorted_key
 
